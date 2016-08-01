@@ -21,5 +21,13 @@ COMMON_LIBS = $(PROJECT_LIBS) \
 # TODO: Why do we still need to specify this for each executable that we build?
 AM_CXXFLAGS = $(COMMON_CXXFLAGS)
 
-bin_PROGRAMS =
+bin_PROGRAMS = \
+  trie
 
+#List of source files needed to build the executable:
+trie_SOURCES = \
+	src/trees/trie/trie.cc
+trie_CXXFLAGS = \
+	$(COMMON_CXXFLAGS)
+trie_LDADD = \
+	$(COMMON_LIBS)
