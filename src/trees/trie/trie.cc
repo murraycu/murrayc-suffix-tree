@@ -2,6 +2,8 @@
 #include <iostream>
 #include <vector>
 #include <cassert>
+#include <stack>
+#include <utility>
 
 class Trie {
 public:
@@ -9,6 +11,37 @@ public:
     const auto node = find_node(key);
     return node != nullptr;
   };
+
+  std::vector<std::string> find_candidates(const std::string& prefix) {
+    if (prefix.empty()) {
+      return {};
+    }
+
+    Node* prefix_node = find_node(prefix);
+    if (!prefix_node) {
+      return {};
+    }
+
+    std::vector<std::string> result;
+
+    std::stack<std::pair<std::string, Node*>> stack;
+    stack.emplace(prefix, prefix_node);
+    while (!stack.empty()) {
+      auto item = stack.top();
+      stack.pop();
+
+      const auto& node = item.second;
+      if (node->children.empty()) {
+        result.emplace_back(item.first);
+      }
+
+      for (auto child : node->children) {
+        stack.emplace(item.first + child->part, child);
+      }
+    }
+
+    return result;
+  }
 
   void insert(const std::string& key) {
 
@@ -94,6 +127,16 @@ int main() {
   assert(trie.exists("banana"));
   assert(trie.exists("foo"));
   assert(!trie.exists("foop"));
+
+  const auto candidates = trie.find_candidates("ban");
+  //for (const auto candidate : candidates) {
+  //  std::cout << "candidate: " << candidate << '\n';
+  //}
+
+  // TODO: Check wthout caring about the order:
+  const auto expected_candidates = std::vector<std::string>({"bandana", "banana"});
+
+  assert(candidates == expected_candidates);
 
   return EXIT_SUCCESS;
 }
