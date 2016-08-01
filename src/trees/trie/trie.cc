@@ -17,18 +17,23 @@ public:
     }
 
     auto node = &root;
+    auto appending = false;
     for (const auto ch : key) {
-      //Choose the child node, if any:
       Node* next = nullptr;
-      for (const auto& child : node->children) {
-        if (child->part == ch) {
-          next = child;
-          break;
+
+      if (!appending) {
+        //Choose the child node, if any:
+        for (const auto& child : node->children) {
+          if (child->part == ch) {
+            next = child;
+            break;
+          }
         }
       }
 
       // Add a new node, if necessary:
       if (!next) {
+        appending = true;
         next = new Node;
         next->part = ch;
         node->children.emplace_back(next);
