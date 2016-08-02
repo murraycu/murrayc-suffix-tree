@@ -111,14 +111,12 @@ private:
   };
 
   const Node* find_node(const T_Key& key, bool leaf_only = true) const {
-    //std::cout << "find_node: key=" << key << '\n';
     if (key.empty()) {
       return nullptr;
     }
 
     auto node = &root;
     for (const auto ch : key) {
-      //std::cout << ch << '\n';
 
       //Choose the child node, if any:
       Node* next = nullptr;
@@ -130,7 +128,6 @@ private:
       }
 
       if (!next) {
-        //std::cout << "  not found.\n";
         return nullptr;
       }
 
