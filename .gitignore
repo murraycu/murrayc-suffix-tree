@@ -51,3 +51,4 @@ Makefile.in
 /test-suite.log
 
 /trie
+/radix_tree
