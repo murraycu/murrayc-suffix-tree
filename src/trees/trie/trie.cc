@@ -5,14 +5,23 @@
 #include <stack>
 #include <utility>
 
+template <typename T_Key, typename T_Value>
 class Trie {
 public:
-  bool exists(const std::string& key) {
+  bool exists(const T_Key& key) const {
     const auto node = find_node(key);
     return node != nullptr;
   };
 
-  std::vector<std::string> find_candidates(const std::string& prefix) {
+  /**
+   * Returns T_Value() if the key was not found.
+   */
+  T_Value get_value(const T_Key& key) const {
+    const auto node = find_node(key);
+    return node ? node->value : T_Value();
+  }
+
+  std::vector<T_Key> find_candidates(const T_Key& prefix) {
     if (prefix.empty()) {
       return {};
     }
@@ -22,10 +31,10 @@ public:
       return {};
     }
 
-    std::vector<std::string> result;
+    std::vector<T_Key> result;
 
     //Stack of prefixes+nodes.
-    std::stack<std::pair<std::string, Node*>> stack;
+    std::stack<std::pair<T_Key, const Node*>> stack;
     stack.emplace(prefix, prefix_node);
 
     while (!stack.empty()) {
@@ -45,7 +54,7 @@ public:
     return result;
   }
 
-  void insert(const std::string& key) {
+  void insert(const T_Key& key, const T_Value& value) {
     if (key.empty()) {
       return;
     }
@@ -69,7 +78,7 @@ public:
       if (!next) {
         appending = true;
         next = new Node;
-        Node::Edge edge;
+        typename Node::Edge edge;
         edge.part = ch;
         edge.dest = next;
         node->children.emplace_back(edge);
@@ -79,6 +88,7 @@ public:
     }
 
     node->is_leaf = true;
+    node->value = value;
   }
 
 private:
@@ -97,10 +107,10 @@ private:
 
     // TODO: Wastes space on non-leaves.
     bool is_leaf = false;
-    int value = 0;
+    T_Value value = 0;
   };
 
-  Node* find_node(const std::string& key, bool leaf_only = true) {
+  const Node* find_node(const T_Key& key, bool leaf_only = true) const {
     //std::cout << "find_node: key=" << key << '\n';
     if (key.empty()) {
       return nullptr;
@@ -135,16 +145,21 @@ private:
 
 int main() {
 
-  Trie trie;
-  trie.insert("banana");
-  trie.insert("bandana");
-  trie.insert("foo");
-  trie.insert("foobar");
+  Trie<std::string, int> trie;
+  trie.insert("banana", 1);
+  trie.insert("bandana", 2);
+  trie.insert("foo", 3);
+  trie.insert("foobar", 4);
 
   assert(trie.exists("banana"));
+  assert(trie.get_value("banana") == 1);
   assert(trie.exists("foo"));
+  assert(trie.get_value("foo") == 3);
+
   assert(!trie.exists("foop"));
+  assert(trie.get_value("foop") == 0);
   assert(!trie.exists("ban"));
+  assert(trie.get_value("ban") == 0);
 
   const auto candidates = trie.find_candidates("ban");
   //for (const auto candidate : candidates) {
