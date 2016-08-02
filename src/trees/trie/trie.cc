@@ -17,7 +17,7 @@ public:
       return {};
     }
 
-    auto prefix_node = find_node(prefix);
+    const auto prefix_node = find_node(prefix, false /* not just leaves */);
     if (!prefix_node) {
       return {};
     }
@@ -77,6 +77,8 @@ public:
 
       node = next;
     }
+
+    node->is_leaf = true;
   }
 
 private:
@@ -92,9 +94,13 @@ private:
     //of size alphabet (such as 26),
     //to allow O(1) lookup, at the cost of wasted space.
     std::vector<Edge> children;
+
+    // TODO: Wastes space on non-leaves.
+    bool is_leaf = false;
+    int value = 0;
   };
 
-  Node* find_node(const std::string& key) {
+  Node* find_node(const std::string& key, bool leaf_only = true) {
     //std::cout << "find_node: key=" << key << '\n';
     if (key.empty()) {
       return nullptr;
@@ -121,7 +127,7 @@ private:
       node = next;
     }
 
-    return node;
+    return (!leaf_only || node->is_leaf) ? node : nullptr;
   }
 
   Node root;
@@ -138,6 +144,7 @@ int main() {
   assert(trie.exists("banana"));
   assert(trie.exists("foo"));
   assert(!trie.exists("foop"));
+  assert(!trie.exists("ban"));
 
   const auto candidates = trie.find_candidates("ban");
   //for (const auto candidate : candidates) {
