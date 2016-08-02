@@ -88,6 +88,9 @@ private:
       Node* dest = nullptr;
     };
 
+    //We could instead have a std::vector<Node*> children,
+    //of size alphabet (such as 26),
+    //to allow O(1) lookup, at the cost of wasted space.
     std::vector<Edge> children;
   };
 
