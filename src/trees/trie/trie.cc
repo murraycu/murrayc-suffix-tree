@@ -17,17 +17,19 @@ public:
       return {};
     }
 
-    Node* prefix_node = find_node(prefix);
+    auto prefix_node = find_node(prefix);
     if (!prefix_node) {
       return {};
     }
 
     std::vector<std::string> result;
 
+    //Stack of prefixes+nodes.
     std::stack<std::pair<std::string, Node*>> stack;
     stack.emplace(prefix, prefix_node);
+
     while (!stack.empty()) {
-      auto item = stack.top();
+      const auto item = stack.top();
       stack.pop();
 
       const auto& node = item.second;
@@ -35,8 +37,8 @@ public:
         result.emplace_back(item.first);
       }
 
-      for (auto child : node->children) {
-        stack.emplace(item.first + child->part, child);
+      for (auto edge : node->children) {
+        stack.emplace(item.first + edge.part, edge.dest);
       }
     }
 
@@ -44,7 +46,6 @@ public:
   }
 
   void insert(const std::string& key) {
-
     if (key.empty()) {
       return;
     }
@@ -56,9 +57,9 @@ public:
 
       if (!appending) {
         //Choose the child node, if any:
-        for (const auto& child : node->children) {
-          if (child->part == ch) {
-            next = child;
+        for (const auto& edge : node->children) {
+          if (edge.part == ch) {
+            next = edge.dest;
             break;
           }
         }
@@ -68,8 +69,10 @@ public:
       if (!next) {
         appending = true;
         next = new Node;
-        next->part = ch;
-        node->children.emplace_back(next);
+        Node::Edge edge;
+        edge.part = ch;
+        edge.dest = next;
+        node->children.emplace_back(edge);
       }
 
       node = next;
@@ -79,8 +82,13 @@ public:
 private:
   class Node {
   public:
-    char part = ' ';
-    std::vector<Node*> children;
+    class Edge {
+    public:
+      char part = 0;
+      Node* dest = nullptr;
+    };
+
+    std::vector<Edge> children;
   };
 
   Node* find_node(const std::string& key) {
@@ -95,9 +103,9 @@ private:
 
       //Choose the child node, if any:
       Node* next = nullptr;
-      for (const auto& child : node->children) {
-        if (child->part == ch) {
-          next = child;
+      for (const auto& edge : node->children) {
+        if (edge.part == ch) {
+          next = edge.dest;
           break;
         }
       }
