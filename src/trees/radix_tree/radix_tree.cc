@@ -69,39 +69,42 @@ public:
       Node* next = nullptr;
       for (auto& edge : node->children) {
         const auto& part = edge.part;
+
+        const auto prefix_len = common_prefix(part, 0, key, key_pos);
+        const auto part_len = part.size();
         //std::cout << "key=" << key << ", key_pos=" << key_pos << ", part=" << part << "\n";
         //If the edge's part is a prefix of the remaining key:
-        if (has_prefix(key, key_pos, part)) {
-          //std::cout << "  has_prefix.\n";
+        if (prefix_len == 0) {
+          // No match.
+          continue;
+        } else if (prefix_len < part_len) {
+          // If the key is a prefix of the edge's part:
+
+          // Split it,
+          // adding a new intermediate node in it original node's place, with the original node as a child.
+          const auto prefix = key.substr(0, prefix_len);
+          //std::cout << "  splitting with prefix=" << prefix << std::endl;
+          const auto suffix_part = part.substr(prefix_len);
+          //std::cout << "    suffix_part=" << suffix_part << std::endl;
+
+          const auto dest = edge.dest;
+
+          auto extra_node = new Node;
+          typename Node::Edge extra_edge;
+          extra_edge.part = suffix_part;
+          extra_edge.dest = dest;
+          extra_node->children.emplace_back(extra_edge);
+
+          edge.part = prefix;
+          edge.dest = extra_node;
+
           next = edge.dest;
-          key_pos += part.size();
+          key_pos += prefix_len;
           break;
         } else {
-          // If the key is a prefix of the edge's part:
-          std::size_t prefix_len = 0; // TODO: With C++17, put this in the if()
-          if ((prefix_len = common_prefix(part, 0, key, key_pos))) {
-            // Split it,
-            // adding a new intermediate node in it original node's place, with the original node as a child.
-            const auto prefix = key.substr(0, prefix_len);
-            //std::cout << "  splitting with prefix=" << prefix << std::endl;
-            const auto suffix_part = part.substr(prefix_len);
-            //std::cout << "    suffix_part=" << suffix_part << std::endl;
-
-            const auto dest = edge.dest;
-
-            auto extra_node = new Node;
-            typename Node::Edge extra_edge;
-            extra_edge.part = suffix_part;
-            extra_edge.dest = dest;
-            extra_node->children.emplace_back(extra_edge);
-
-            edge.part = prefix;
-            edge.dest = extra_node;
-
-            next = edge.dest;
-            key_pos += prefix_len;
-            break;
-          }
+          next = edge.dest;
+          key_pos += part_len;
+          break;
         }
       }
 
@@ -158,13 +161,6 @@ private:
     T_Value value = 0;
   };
 
-  static
-  bool has_prefix(const std::string& str, std::size_t str_start_pos, const std::string& prefix) {
-    return str.compare(str_start_pos, prefix.size(),
-        prefix, 0, std::string::npos /* TODO: Shoul not be necessary with C++14 */) == 0;
-  }
-
-public:
   /** Returns the number of characters at the end of the prefix that do not match the @a str from position
    * @a str_start_pos.
    *
