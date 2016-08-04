@@ -47,7 +47,7 @@ public:
       }
 
       for (auto edge : node->children) {
-        stack.emplace(item.first + edge.part, edge.dest);
+        stack.emplace(item.first + edge.part_, edge.dest_);
       }
     }
 
@@ -68,7 +68,7 @@ public:
       //Choose the child node, if any:
       Node* next = nullptr;
       for (auto& edge : node->children) {
-        const auto& part = edge.part;
+        const auto& part = edge.part_;
 
         const auto prefix_len = common_prefix(part, 0, key, key_pos);
         const auto part_len = part.size();
@@ -87,22 +87,19 @@ public:
           const auto suffix_part = part.substr(prefix_len);
           //std::cout << "    suffix_part=" << suffix_part << std::endl;
 
-          const auto dest = edge.dest;
+          const auto dest = edge.dest_;
 
           auto extra_node = new Node;
-          typename Node::Edge extra_edge;
-          extra_edge.part = suffix_part;
-          extra_edge.dest = dest;
-          extra_node->children.emplace_back(extra_edge);
+          extra_node->children.emplace_back(suffix_part, dest);
 
-          edge.part = prefix;
-          edge.dest = extra_node;
+          edge.part_ = prefix;
+          edge.dest_ = extra_node;
 
-          next = edge.dest;
+          next = edge.dest_;
           key_pos += prefix_len;
           break;
         } else {
-          next = edge.dest;
+          next = edge.dest_;
           key_pos += part_len;
           break;
         }
@@ -132,10 +129,7 @@ public:
     //std::cout << "Adding suffix: " << suffix << ", with value: " << value << '\n';
 
     const auto next = new Node;
-    typename Node::Edge edge;
-    edge.part = suffix;
-    edge.dest = next;
-    node->children.emplace_back(edge);
+    node->children.emplace_back(suffix, next);
 
     next->is_leaf = true;
     next->value = value;
@@ -147,8 +141,18 @@ private:
   public:
     class Edge {
     public:
-      T_Key part = T_Key();
-      Node* dest = nullptr;
+      Edge(const T_Key& part, Node* dest)
+        : part_(part),
+          dest_(dest) {
+      }
+
+      Edge(const Edge& src) = default;
+      Edge& operator=(const Edge& src) = default;
+      Edge(Edge&& src) = default;
+      Edge& operator=(Edge&& src) = default;
+
+      T_Key part_ = T_Key();
+      Node* dest_ = nullptr;
     };
 
     //We could instead have a std::vector<Node*> children,
@@ -240,14 +244,14 @@ public:
       //Choose the child node, if any:
       Node* next = nullptr;
       for (const auto& edge : node->children) {
-        const auto& part = edge.part;
+        const auto& part = edge.part_;
         const auto part_size = part.size();
         //std::cout << "key=" << key << ", key_pos=" << key_pos << ", part=" << part << "\n";
         if(!prefix_matches(key, key_pos, part, 0)) {
           continue;
         }
 
-        next = edge.dest;
+        next = edge.dest_;
         key_pos += part_size;
         //std::cout << "    next: " << next << std::endl;
         break;
