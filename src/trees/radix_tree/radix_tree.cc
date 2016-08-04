@@ -42,11 +42,11 @@ public:
       stack.pop();
 
       const auto& node = item.second;
-      if (node->children.empty()) {
+      if (node->children_.empty()) {
         result.emplace_back(item.first);
       }
 
-      for (auto edge : node->children) {
+      for (auto edge : node->children_) {
         stack.emplace(item.first + edge.part_, edge.dest_);
       }
     }
@@ -67,7 +67,7 @@ public:
       //std::cout << "insert(): remaining key=" << key.substr(key_pos) << std::endl;
       //Choose the child node, if any:
       Node* next = nullptr;
-      for (auto& edge : node->children) {
+      for (auto& edge : node->children_) {
         const auto& part = edge.part_;
 
         const auto prefix_len = common_prefix(part, 0, key, key_pos);
@@ -90,7 +90,7 @@ public:
           const auto dest = edge.dest_;
 
           auto extra_node = new Node;
-          extra_node->children.emplace_back(suffix_part, dest);
+          extra_node->children_.emplace_back(suffix_part, dest);
 
           edge.part_ = prefix;
           edge.dest_ = extra_node;
@@ -129,7 +129,7 @@ public:
     //std::cout << "Adding suffix: " << suffix << ", with value: " << value << '\n';
 
     const auto next = new Node;
-    node->children.emplace_back(suffix, next);
+    node->children_.emplace_back(suffix, next);
 
     next->is_leaf = true;
     next->value = value;
@@ -155,10 +155,10 @@ private:
       Node* dest_ = nullptr;
     };
 
-    //We could instead have a std::vector<Node*> children,
+    //We could instead have a std::vector<Node*> children_,
     //of size alphabet (such as 26),
     //to allow O(1) lookup, at the cost of wasted space.
-    std::vector<Edge> children;
+    std::vector<Edge> children_;
 
     // TODO: Wastes space on non-leaves.
     bool is_leaf = false;
@@ -240,10 +240,10 @@ public:
     const auto key_size = key.size();
     while (key_pos < key_size) {
       //std::cout << "find_node(): remaining key=" << key.substr(key_pos) << std::endl;
-      //std::cout << "  children size: " << node->children.size() << std::endl;
+      //std::cout << "  children_ size: " << node->children_.size() << std::endl;
       //Choose the child node, if any:
       Node* next = nullptr;
-      for (const auto& edge : node->children) {
+      for (const auto& edge : node->children_) {
         const auto& part = edge.part_;
         const auto part_size = part.size();
         //std::cout << "key=" << key << ", key_pos=" << key_pos << ", part=" << part << "\n";
