@@ -136,6 +136,17 @@ public:
     //std::cout << "next: " << next << std::endl;
   }
 
+  void remove(const T_Key& key) {
+    auto node = find_node(key);
+    if (!node) {
+      return;
+    }
+
+    //TODO: Each node needs a pointer to its parent.
+    //We then need to ask its parent to delete its edge to this node,
+    //and then combine itself with its own parent if it now has only one edge.
+  }
+
 private:
   class Node {
   public:
