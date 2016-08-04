@@ -52,3 +52,4 @@ Makefile.in
 
 /trie
 /radix_tree
+/suffix_tree

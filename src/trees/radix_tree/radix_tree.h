@@ -1,7 +1,7 @@
-#include <cstdlib>
-#include <iostream>
+#ifndef MURRAYC_RADIX_TREE_H
+#define MURRAYC_RADIX_TREE_H
+
 #include <vector>
-#include <cassert>
 #include <stack>
 #include <utility>
 
@@ -43,7 +43,9 @@ public:
     return node->values_;
   }
 
-  std::vector<T_Key> find_candidates(const T_Key& prefix) {
+  using Candidates = std::vector<std::pair<T_Key, std::vector<T_Value>>>;
+  Candidates find_candidates(const T_Key& prefix) const {
+    std::cout << "find_candidates(): prefix=" << prefix << std::endl;
     if (prefix.empty()) {
       return {};
     }
@@ -53,7 +55,9 @@ public:
       return {};
     }
 
-    std::vector<T_Key> result;
+    std::cout << "  prefix_node: part=" << prefix_node << ", values size:" << prefix_node->values_.size() << std::endl;
+
+    Candidates result;
 
     //Stack of prefixes+nodes.
     std::stack<std::pair<T_Key, const Node*>> stack;
@@ -64,11 +68,12 @@ public:
       stack.pop();
 
       const auto& node = item.second;
-      if (node->children_.empty()) {
-        result.emplace_back(item.first);
+      if (node->has_value()) {
+        result.emplace_back(item.first, item.second->values_);
       }
 
       for (auto edge : node->children_) {
+        std::cout << "  edge: " << edge.part_ << std::endl;
         stack.emplace(item.first + edge.part_, edge.dest_);
       }
     }
@@ -187,7 +192,7 @@ private:
       Node* dest_ = nullptr;
     };
 
-    inline bool is_leaf() const {
+    inline bool has_value() const {
       return !values_.empty();
     }
 
@@ -304,64 +309,10 @@ private:
     }
 
     //std::cout << "node: " << node << std::endl;
-    return (!leaf_only || node->is_leaf()) ? node : nullptr;
+    return (!leaf_only || node->has_value()) ? node : nullptr;
   }
 
   Node root;
 };
 
-/*
-void test_prefix_matches() {
-  using Tree = RadixTree<std::string, int>;
-
-  assert(Tree::prefix_matches("banana", 0, "banana", 0));
-  assert(!Tree::prefix_matches("banan", 0, "banana", 0));
-  assert(Tree::prefix_matches("banana", 0, "banan", 0));
-  assert(Tree::prefix_matches("banana", 0, "ban", 0));
-  assert(!Tree::prefix_matches("foo", 0, "banana", 0));
-}
-
-void test_common_prefix() {
-  using Tree = RadixTree<std::string, int>;
-  assert(Tree::common_prefix("banana", 0, "bandana", 0) == 3);
-  assert(Tree::common_prefix("banana", 0, "foo", 0) == 0);
-  assert(Tree::common_prefix("banana", 0, "banana", 0) == 6);
-}
-*/
-
-int main() {
-  //test_prefix_matches();
-  //test_common_prefix();
-
-  RadixTree<std::string, int> radix_tree;
-  radix_tree.insert("banana", 1);
-  radix_tree.insert("bandana", 2);
-  radix_tree.insert("foo", 3);
-  radix_tree.insert("foobar", 4);
-
-  assert(radix_tree.exists("foo"));
-  assert(radix_tree.exists("banana"));
-  assert(radix_tree.get_value("banana") == 1);
-  assert(radix_tree.exists("bandana"));
-  assert(radix_tree.get_value("bandana") == 2);
-  assert(radix_tree.get_value("foo") == 3);
-
-  assert(!radix_tree.exists("foop"));
-  assert(radix_tree.get_value("foop") == 0);
-  assert(!radix_tree.exists("ban"));
-  assert(radix_tree.get_value("ban") == 0);
-
-  const auto candidates = radix_tree.find_candidates("ban");
-  // TODO: Check wthout caring about the order:
-  const auto expected_candidates = std::vector<std::string>({"bandana", "banana"});
-  /*
-   for (const auto& candidate : candidates) {
-    std::cout << "candidate: " << candidate << '\n';
-  }
-  */
-
-  assert(candidates == expected_candidates);
-
-  return EXIT_SUCCESS;
-}
-
+#endif // MURRAYC_RADIX_TREE_H

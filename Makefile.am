@@ -23,7 +23,8 @@ AM_CXXFLAGS = $(COMMON_CXXFLAGS)
 
 bin_PROGRAMS = \
   trie \
-  radix_tree
+  radix_tree \
+  suffix_tree
 
 #List of source files needed to build the executable:
 trie_SOURCES = \
@@ -39,4 +40,12 @@ radix_tree_SOURCES = \
 radix_tree_CXXFLAGS = \
 	$(COMMON_CXXFLAGS)
 radix_tree_LDADD = \
+	$(COMMON_LIBS)
+
+suffix_tree_SOURCES = \
+	src/trees/radix_tree/radix_tree.h \
+	src/trees/suffix_tree/suffix_tree.cc
+suffix_tree_CXXFLAGS = \
+	$(COMMON_CXXFLAGS)
+suffix_tree_LDADD = \
 	$(COMMON_LIBS)
