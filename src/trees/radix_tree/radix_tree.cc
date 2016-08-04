@@ -13,12 +13,34 @@ public:
     return node != nullptr;
   };
 
-  /**
+  /** Get the first value associates with the key.
+   *
    * Returns T_Value() if the key was not found.
    */
   T_Value get_value(const T_Key& key) const {
     const auto node = find_node(key);
-    return node ? node->value : T_Value();
+    if (!node) {
+      return T_Value();
+    }
+
+    if (node->values_.empty()) {
+      return T_Value();
+    }
+
+    return node->values_[0];
+  }
+
+  /** Get the first value associates with the key.
+   *
+   * Returns T_Value() if the key was not found.
+   */
+  std::vector<T_Value> get_values(const T_Key& key) const {
+    const auto node = find_node(key);
+    if (!node) {
+      return {};
+    }
+
+    return node->values_;
   }
 
   std::vector<T_Key> find_candidates(const T_Key& prefix) {
@@ -131,8 +153,7 @@ public:
     const auto next = new Node;
     node->children_.emplace_back(suffix, next);
 
-    next->is_leaf = true;
-    next->value = value;
+    next->values_.emplace_back(value);
     //std::cout << "next: " << next << std::endl;
   }
 
@@ -166,14 +187,17 @@ private:
       Node* dest_ = nullptr;
     };
 
+    inline bool is_leaf() const {
+      return !values_.empty();
+    }
+
     //We could instead have a std::vector<Node*> children_,
     //of size alphabet (such as 26),
     //to allow O(1) lookup, at the cost of wasted space.
     std::vector<Edge> children_;
 
     // TODO: Wastes space on non-leaves.
-    bool is_leaf = false;
-    T_Value value = 0;
+    std::vector<T_Value> values_;
   };
 
   /** Returns the number of characters at the end of the prefix that do not match the @a str from position
@@ -280,7 +304,7 @@ private:
     }
 
     //std::cout << "node: " << node << std::endl;
-    return (!leaf_only || node->is_leaf) ? node : nullptr;
+    return (!leaf_only || node->is_leaf()) ? node : nullptr;
   }
 
   Node root;
