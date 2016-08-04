@@ -161,6 +161,7 @@ private:
     T_Value value = 0;
   };
 
+public:
   /** Returns the number of characters at the end of the prefix that do not match the @a str from position
    * @a str_start_pos.
    *
@@ -197,7 +198,12 @@ private:
   static
   std::size_t common_prefix(const std::string& str, std::size_t str_start_pos, const std::string& prefix, std::size_t prefix_start_pos) {
     //TODO: Use std::mismatch().
+    const auto str_start = std::begin(str) + str_start_pos;
+    auto iters = std::mismatch(str_start, std::end(str),
+        std::begin(prefix) + prefix_start_pos, std::end(prefix));
+    return std::distance(str_start, iters.first);
 
+    /*
     const auto str_len = str.size() - str_start_pos;
     const auto prefix_len = prefix.size() - prefix_start_pos;
 
@@ -216,6 +222,7 @@ private:
     }
 
     return i_str - str_start_pos;
+    */
   }
 
   const Node* find_node(const T_Key& key, bool leaf_only = true) const {
