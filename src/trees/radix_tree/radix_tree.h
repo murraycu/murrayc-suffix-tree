@@ -110,8 +110,9 @@ public:
           // Split it,
           // adding a new intermediate node in it original node's place, with the original node as a child.
           const auto prefix = part.substr(0, prefix_len);
-          //std::cout << "  splitting with prefix=" << prefix << std::endl;
+          //std::cout << "  splitting part=" << part << ", at key prefix: " << key.substr(0, key_pos + 1) << ", with prefix=" << prefix << ", values size: " << dest->values_.size() << std::endl;
           const auto suffix_part = part.substr(prefix_len);
+          //assert(part == (prefix + suffix_part));
           //std::cout << "    suffix_part=" << suffix_part << std::endl;
 
           const auto dest = edge.dest_;
