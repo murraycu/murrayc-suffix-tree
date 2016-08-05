@@ -211,7 +211,15 @@ private:
    * @param match Whether @a str has the @a prefix.
    */
   static
-  bool prefix_matches(const std::string& str, std::size_t str_start_pos, const std::string& prefix, std::size_t prefix_start_pos) {
+  bool has_prefix(const std::string& str, std::size_t str_start_pos, const std::string& prefix, std::size_t prefix_start_pos = 0) {
+    const auto prefix_start = std::begin(prefix) + prefix_start_pos;
+    const auto prefix_end = std::end(prefix);
+    const auto iters = std::mismatch(std:: begin(str) + str_start_pos, std::end(str),
+        prefix_start, prefix_end);
+    return iters.second == prefix_end;
+
+    /*
+    const std::size_t prefix_start_pos = 0;
     const auto str_len = str.size() - str_start_pos;
     const auto prefix_len = prefix.size() - prefix_start_pos;
 
@@ -236,13 +244,14 @@ private:
 
     //All characters in prefix match at the start of str:
     return true;
+    */
   }
 
   static
   std::size_t common_prefix(const std::string& str, std::size_t str_start_pos, const std::string& prefix, std::size_t prefix_start_pos) {
     //TODO: Use std::mismatch().
     const auto str_start = std::begin(str) + str_start_pos;
-    auto iters = std::mismatch(str_start, std::end(str),
+    const auto iters = std::mismatch(str_start, std::end(str),
         std::begin(prefix) + prefix_start_pos, std::end(prefix));
     return std::distance(str_start, iters.first);
 
@@ -285,8 +294,8 @@ private:
       for (const auto& edge : node->children_) {
         const auto& part = edge.part_;
         const auto part_size = part.size();
-        //std::cout << "key=" << key << ", key_pos=" << key_pos << ", part=" << part << "\n";
-        if(!prefix_matches(key, key_pos, part, 0)) {
+        //std::cout << "  key=" << key << ", key_pos=" << key_pos << ", part=" << part << "\n";
+        if(!has_prefix(key, key_pos, part)) {
           continue;
         }
 

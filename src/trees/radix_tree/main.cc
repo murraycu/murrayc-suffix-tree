@@ -3,16 +3,15 @@
 #include <cassert>
 #include "radix_tree.h"
 
-
 /*
-void test_prefix_matches() {
+void test_has_prefix() {
   using Tree = RadixTree<std::string, int>;
 
-  assert(Tree::prefix_matches("banana", 0, "banana", 0));
-  assert(!Tree::prefix_matches("banan", 0, "banana", 0));
-  assert(Tree::prefix_matches("banana", 0, "banan", 0));
-  assert(Tree::prefix_matches("banana", 0, "ban", 0));
-  assert(!Tree::prefix_matches("foo", 0, "banana", 0));
+  assert(Tree::has_prefix("banana", 0, "banana"));
+  assert(!Tree::has_prefix("banan", 0, "banana"));
+  assert(Tree::has_prefix("banana", 0, "banan"));
+  assert(Tree::has_prefix("banana", 0, "ban"));
+  assert(!Tree::has_prefix("foo", 0, "banana"));
 }
 
 void test_common_prefix() {
@@ -24,6 +23,7 @@ void test_common_prefix() {
 */
 
 int main() {
+  //test_has_prefix();
   //test_prefix_matches();
   //test_common_prefix();
 
@@ -51,13 +51,15 @@ int main() {
   // TODO: Check wthout caring about the order:
   const auto expected_candidates = Tree::Candidates{{"bandana", {2}},
       {"banana", {1, 9}}};
-   for (const auto& candidate : candidates) {
+  /*
+  for (const auto& candidate : candidates) {
     std::cout << "candidate: " << candidate.first << ": ";
     for (const auto& value : candidate.second) {
       std::cout << value << ", ";
     }
     std::cout << '\n';
   }
+  */
 
   assert(candidates == expected_candidates);
 
