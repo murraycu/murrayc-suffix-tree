@@ -109,7 +109,7 @@ public:
 
           // Split it,
           // adding a new intermediate node in it original node's place, with the original node as a child.
-          const auto prefix = key.substr(0, prefix_len);
+          const auto prefix = part.substr(0, prefix_len);
           //std::cout << "  splitting with prefix=" << prefix << std::endl;
           const auto suffix_part = part.substr(prefix_len);
           //std::cout << "    suffix_part=" << suffix_part << std::endl;
