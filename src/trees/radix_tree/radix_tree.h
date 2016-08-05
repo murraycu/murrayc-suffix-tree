@@ -122,8 +122,9 @@ public:
           edge.part_ = prefix;
           edge.dest_ = extra_node;
 
-          next = edge.dest_;
-          key_pos += prefix_len;
+          // Try the same node again.
+          // This time it might be a perfect match.
+          next = node;
           break;
         } else {
           next = edge.dest_;
