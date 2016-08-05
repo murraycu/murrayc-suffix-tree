@@ -4,6 +4,7 @@
 #include <vector>
 #include <stack>
 #include <utility>
+#include <tuple>
 
 template <typename T_Key, typename T_Value>
 class RadixTree {
@@ -45,36 +46,68 @@ public:
 
   using Candidates = std::vector<std::pair<T_Key, std::vector<T_Value>>>;
   Candidates find_candidates(const T_Key& prefix) const {
-    std::cout << "find_candidates(): prefix=" << prefix << std::endl;
+    //std::cout << "find_candidates(): prefix=" << prefix << std::endl;
     if (prefix.empty()) {
       return {};
     }
 
-    const auto prefix_node = find_node(prefix, false /* not just leaves */);
-    if (!prefix_node) {
-      return {};
-    }
+    const auto prefix_len = prefix.size();
 
-    std::cout << "  prefix_node: part=" << prefix_node << ", values size:" << prefix_node->values_.size() << std::endl;
-
-    Candidates result;
+    std::stack<std::pair<T_Key, const Node*>> stack_result;
 
     //Stack of prefixes+nodes.
-    std::stack<std::pair<T_Key, const Node*>> stack;
-    stack.emplace(prefix, prefix_node);
+    using Item = std::tuple<std::size_t /* prefix_pos */, T_Key, const Node*>;
+    std::stack<Item> stack;
+    stack.emplace(0, T_Key(), &root);
 
     while (!stack.empty()) {
       const auto item = stack.top();
       stack.pop();
 
-      const auto& node = item.second;
-      if (node->has_value()) {
-        result.emplace_back(item.first, item.second->values_);
+      const auto prefix_pos = std::get<0>(item);
+      const auto& key = std::get<1>(item);
+      const auto node = std::get<2>(item);
+
+      //If we have already used all of the prefix,
+      //then use all leaf nodes,
+      //because we are just looking for the (candidate) values below an identified intermediate candidate node.
+      if (prefix_pos >= prefix_len) { 
+        stack_result.emplace(key, node);
+        continue;
       }
 
       for (auto edge : node->children_) {
-        std::cout << "  edge: " << edge.part_ << std::endl;
-        stack.emplace(item.first + edge.part_, edge.dest_);
+        const auto& edge_part = edge.part_;
+        //std::cout << "  edge: " << edge_part << std::endl;
+
+        const auto child_key = key + edge_part;
+
+        if (has_prefix(prefix, prefix_pos, edge_part, 0)) {
+          // The part is a prefix of the remaining key, so follow it:
+          stack.emplace(prefix_pos + edge_part.size(), child_key, edge.dest_);
+        } else if (has_prefix(edge_part, 0, prefix, prefix_pos)) { 
+          // The remaining key is a prefix of the part, so use it as part of candidates:
+          stack.emplace(prefix_len, child_key, edge.dest_);
+        }
+      }
+    }
+
+    //Find all descendent leaves:
+    Candidates result;
+    while(!stack_result.empty()) {
+      const auto item = stack_result.top();
+      stack_result.pop();
+
+      const auto& key = item.first;
+      const auto node = item.second; 
+
+      //Use it if it is a leaf node:
+      if (node->has_value()) {
+        result.emplace_back(key, node->values_);
+      }
+
+      for (auto edge : node->children_) {
+        stack_result.emplace(key + edge.part_, edge.dest_);
       }
     }
 
@@ -207,11 +240,7 @@ private:
     std::vector<T_Value> values_;
   };
 
-  /** Returns the number of characters at the end of the prefix that do not match the @a str from position
-   * @a str_start_pos.
-   *
-   * @param match Whether @a str has the @a prefix.
-   */
+public:
   static
   bool has_prefix(const std::string& str, std::size_t str_start_pos, const std::string& prefix, std::size_t prefix_start_pos = 0) {
     const auto prefix_start = std::begin(prefix) + prefix_start_pos;
@@ -279,7 +308,7 @@ private:
     */
   }
 
-  const Node* find_node(const T_Key& key, bool leaf_only = true) const {
+  const Node* find_node(const T_Key& key) const {
     //std::cout << "find_node(): key=" << key << std::endl;
     if (key.empty()) {
       return nullptr;
@@ -320,7 +349,7 @@ private:
     }
 
     //std::cout << "node: " << node << std::endl;
-    return (!leaf_only || node->has_value()) ? node : nullptr;
+    return node->has_value() ? node : nullptr;
   }
 
   Node root;
