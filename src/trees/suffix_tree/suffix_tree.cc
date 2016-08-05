@@ -2,7 +2,6 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <set>
 #include <cassert>
 #include <stack>
 #include <utility>
@@ -31,22 +30,8 @@ public:
   /**
    * Returns T_Value() if the key was not found.
    */
-  std::set<T_Value> find_candidates(const T_Key& substr) const {
-    std::set<T_Value> result;
-    const auto keys_and_values = radix_tree_.find_candidates(substr);
-    for (const auto& key_and_values : keys_and_values) {
-      const auto& values = key_and_values.second;
-
-      /*
-      for (const auto& value: values) {
-        std::cout << "debug: key=" << key_and_values.first << ", value: " << value << std::endl;
-      }
-      */
-
-      result.insert(std::begin(values), std::end(values));
-    }
-
-    return result;
+  std::set<T_Value> find_candidate_values(const T_Key& substr) const {
+    return radix_tree_.find_candidate_values(substr);
   }
 
 private:
@@ -70,7 +55,7 @@ void test_full_text_index() {
     ++pos;
   }
 
-  const auto positions = suffix_tree.find_candidates("Pip");
+  const auto positions = suffix_tree.find_candidate_values("Pip");
   for (const auto position : positions) {
     std::cout << position << ", ";
   }
@@ -93,7 +78,7 @@ int main() {
 
   //TODO: Compare without caring about the order:
   const std::set<int> expected_candidates = {1, 9, 2};
-  const auto candidates = suffix_tree.find_candidates("an");
+  const auto candidates = suffix_tree.find_candidate_values("an");
   assert(candidates == expected_candidates);
 /*
   std::cout << "candidates size: " << candidates.size() << std::endl;
