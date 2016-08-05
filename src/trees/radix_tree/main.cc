@@ -30,6 +30,7 @@ int main() {
   using Tree = RadixTree<std::string, int>;
   Tree radix_tree;
   radix_tree.insert("banana", 1);
+  radix_tree.insert("banana", 9);
   radix_tree.insert("bandana", 2);
   radix_tree.insert("foo", 3);
   radix_tree.insert("foobar", 4);
@@ -49,12 +50,14 @@ int main() {
   const auto candidates = radix_tree.find_candidates("ban");
   // TODO: Check wthout caring about the order:
   const auto expected_candidates = Tree::Candidates{{"bandana", {2}},
-      {"banana", {1}}};
-  /*
+      {"banana", {1, 9}}};
    for (const auto& candidate : candidates) {
-    std::cout << "candidate: " << candidate << '\n';
+    std::cout << "candidate: " << candidate.first << ": ";
+    for (const auto& value : candidate.second) {
+      std::cout << value << ", ";
+    }
+    std::cout << '\n';
   }
-  */
 
   assert(candidates == expected_candidates);
 

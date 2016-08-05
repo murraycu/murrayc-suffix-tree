@@ -146,8 +146,8 @@ public:
     }
 
     if (key_pos == key_size) {
-      // TODO: Return false because it is already there.
-      //std::cout << "debug: insert(): Already exists." << std::endl;
+      //The node already exists, so just add the extra value:
+      node->values_.emplace_back(value);
       return;
     }
 
