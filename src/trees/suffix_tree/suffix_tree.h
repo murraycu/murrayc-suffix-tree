@@ -60,7 +60,7 @@ public:
     // putting these in a second stack.
     using Item = std::pair<std::size_t /* prefix_pos */, const Node*>;
     std::stack<Item> stack;
-    stack.emplace(0, &root);
+    stack.emplace(0, &root_);
 
     while (!stack.empty()) {
       const auto item = stack.top();
@@ -222,7 +222,7 @@ private:
       return;
     }
 
-    auto node = &root;
+    auto node = &root_;
     std::size_t key_pos = 0;
     const auto key_size = key.size();
     while (key_pos < key_size) {
@@ -305,7 +305,7 @@ private:
       return nullptr;
     }
 
-    auto node = &root;
+    auto node = &root_;
     std::size_t key_pos = 0;
     const auto key_size = key.size();
     while (key_pos < key_size) {
@@ -343,7 +343,7 @@ private:
     return node->has_value() ? node : nullptr;
   }
 
-  Node root;
+  Node root_;
 };
 
 #endif // MURRAYC_SUFFIX_TREE_H
