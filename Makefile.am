@@ -44,7 +44,8 @@ radix_tree_LDADD = \
 
 suffix_tree_SOURCES = \
 	src/trees/radix_tree/radix_tree.h \
-	src/trees/suffix_tree/suffix_tree.cc
+	src/trees/suffix_tree/suffix_tree.h \
+	src/trees/suffix_tree/main.cc
 suffix_tree_CXXFLAGS = \
 	$(COMMON_CXXFLAGS)
 suffix_tree_LDADD = \

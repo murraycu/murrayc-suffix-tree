@@ -1,42 +1,9 @@
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
-#include <vector>
 #include <cassert>
-#include <stack>
-#include <utility>
 
-#include "../radix_tree/radix_tree.h"
-
-template<typename T_Key, typename T_Value>
-class SuffixTree {
-public:
-  void insert(const T_Key& key, const T_Value& value) {
-    //Insert every suffix of the key:
-    T_Key suffix = key;
-    while(!suffix.empty()) {
-      //std::cout << "insert(): suffix=" << suffix << ", value=" << value <<std::endl;
-      radix_tree_.insert(suffix, value);
-
-      // Remove the first character:
-      suffix = suffix.substr(1);
-    }
-  }
-
-  bool exists(const T_Key& key_suffix) const {
-    return radix_tree_.exists(key_suffix);
-  }
-
-  /**
-   * Returns T_Value() if the key was not found.
-   */
-  std::set<T_Value> find_candidate_values(const T_Key& substr) const {
-    return radix_tree_.find_candidate_values(substr);
-  }
-
-private:
-  RadixTree<T_Key, T_Value> radix_tree_;
-};
+#include "suffix_tree.h"
 
 static
 void test_full_text_index() {
