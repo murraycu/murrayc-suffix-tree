@@ -5,7 +5,6 @@
 #include <vector>
 #include <set>
 #include <stack>
-#include <utility>
 
 template <typename T_Key, typename T_Value>
 class SuffixTree {
@@ -45,78 +44,7 @@ public:
     return node->values_;
   }
 
-  using Candidates = std::vector<std::pair<T_Key, std::vector<T_Value>>>;
-  Candidates find_candidates(const T_Key& prefix) const {
-    //std::cout << "find_candidates(): prefix=" << prefix << std::endl;
-    if (prefix.empty()) {
-      return {};
-    }
-
-    const auto prefix_len = prefix.size();
-
-    std::stack<std::pair<T_Key, const Node*>> stack_result;
-
-    //Stack of prefixes+nodes.
-    using Item = std::tuple<std::size_t /* prefix_pos */, T_Key, const Node*>;
-    std::stack<Item> stack_starts;
-    stack_starts.emplace(0, T_Key(), &root);
-
-    while (!stack_starts.empty()) {
-      const auto item = stack_starts.top();
-      stack_starts.pop();
-
-      const auto prefix_pos = std::get<0>(item);
-      const auto& key = std::get<1>(item);
-      const auto node = std::get<2>(item);
-
-      //If we have already used all of the prefix,
-      //then use all leaf nodes,
-      //because we are just looking for the (candidate) values below an identified intermediate candidate node.
-      if (prefix_pos >= prefix_len) { 
-        stack_result.emplace(key, node);
-        continue;
-      }
-
-      for (auto edge : node->children_) {
-        const auto& edge_part = edge.part_;
-        //std::cout << "  edge: " << edge_part << std::endl;
-
-        const auto child_key = key + edge_part;
-
-        if (has_prefix(prefix, prefix_pos, edge_part, 0)) {
-          // The part is a prefix of the remaining key, so follow it:
-          stack_starts.emplace(prefix_pos + edge_part.size(), child_key, edge.dest_);
-        } else if (has_prefix(edge_part, 0, prefix, prefix_pos)) { 
-          // The remaining key is a prefix of the part, so use it as part of candidates:
-          stack_starts.emplace(prefix_len, child_key, edge.dest_);
-        }
-      }
-    }
-
-    //Find all descendent leaves:
-    Candidates result;
-    while(!stack_result.empty()) {
-      const auto item = stack_result.top();
-      stack_result.pop();
-
-      const auto& key = item.first;
-      const auto node = item.second; 
-
-      //Use it if it is a leaf node:
-      if (node->has_value()) {
-        result.emplace_back(key, node->values_);
-      }
-
-      for (auto edge : node->children_) {
-        stack_result.emplace(key + edge.part_, edge.dest_);
-      }
-    }
-
-    return result;
-  }
-
-  /**
-   * Returns T_Value() if the key was not found.
+  /** Finds the values for any key contains this substring.
    */
   std::set<T_Value> find_candidate_values(const T_Key& prefix) const {
     std::set<T_Value> result;
