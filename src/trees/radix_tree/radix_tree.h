@@ -119,14 +119,14 @@ public:
    * Returns T_Value() if the key was not found.
    */
   std::set<T_Value> find_candidate_values(const T_Key& prefix) const {
+    std::set<T_Value> result;
+
     //std::cout << "find_candidates(): prefix=" << prefix << std::endl;
     if (prefix.empty()) {
-      return {};
+      return result;
     }
 
     const auto prefix_len = prefix.size();
-
-    std::stack<const Node*> stack_result;
 
     // Find all the nodes whose descendants (including themselves) should be in the result,
     // putting these in a second stack.
@@ -142,11 +142,11 @@ public:
       const auto node = item.second;
 
       //If we have already used all of the prefix,
-      //then use all leaf nodes,
-      //because we are just looking for the (candidate) values below an identified intermediate candidate node.
+      //then use all subsequent leaf nodes.
       if (prefix_pos >= prefix_len) { 
-        stack_result.emplace(node);
-        continue;
+        if (node->has_value()) {
+          result.insert(std::begin(node->values_), std::end(node->values_));
+        }
       }
 
       for (auto edge : node->children_) {
@@ -156,25 +156,9 @@ public:
           // The part is a prefix of the remaining key, so follow it:
           stack.emplace(prefix_pos + edge_part.size(), edge.dest_);
         } else if (has_prefix(edge_part, 0, prefix, prefix_pos)) { 
-          // The remaining key is a prefix of the part, so use it as part of candidates:
-          stack_result.emplace(edge.dest_);
+          // The remaining key is a prefix of the part, so it is a candidate:
+          stack.emplace(prefix_len, edge.dest_);
         }
-      }
-    }
-
-    //Find all the descendent leaves of the identified nodes.
-    std::set<T_Value> result;
-    while(!stack_result.empty()) {
-      const auto node = stack_result.top();
-      stack_result.pop();
-
-      //Use it if it is a leaf node:
-      if (node && node->has_value()) {
-        result.insert(std::begin(node->values_), std::end(node->values_));
-      }
-
-      for (auto edge : node->children_) {
-        stack_result.emplace(edge.dest_);
       }
     }
 
