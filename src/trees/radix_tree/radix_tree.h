@@ -291,7 +291,6 @@ private:
     std::vector<T_Value> values_;
   };
 
-public:
   static
   bool has_prefix(const std::string& str, std::size_t str_start_pos, const std::string& prefix, std::size_t prefix_start_pos = 0) {
     const auto prefix_start = std::begin(prefix) + prefix_start_pos;
