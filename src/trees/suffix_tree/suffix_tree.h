@@ -71,7 +71,7 @@ public:
 
       //If we have already used all of the prefix,
       //then use all subsequent leaf nodes.
-      if (prefix_pos >= prefix_len) { 
+      if (prefix_pos >= prefix_len) {
         if (node->has_value()) {
           result.insert(std::begin(node->values_), std::end(node->values_));
         }
@@ -83,7 +83,7 @@ public:
         if (has_prefix(prefix, prefix_pos, edge_part, 0)) {
           // The part is a prefix of the remaining key, so follow it:
           stack.emplace(prefix_pos + edge_part.size(), edge.dest_);
-        } else if (has_prefix(edge_part, 0, prefix, prefix_pos)) { 
+        } else if (has_prefix(edge_part, 0, prefix, prefix_pos)) {
           // The remaining key is a prefix of the part, so it is a candidate:
           stack.emplace(prefix_len, edge.dest_);
         }
