@@ -82,7 +82,7 @@ public:
 
         if (has_prefix(prefix, prefix_pos, edge_part, 0)) {
           // The part is a prefix of the remaining key, so follow it:
-          stack.emplace(prefix_pos + edge_part.size(), edge.dest_);
+          stack.emplace(prefix_pos + str_size(edge_part), edge.dest_);
         } else if (has_prefix(edge_part, 0, prefix, prefix_pos)) {
           // The remaining key is a prefix of the part, so it is a candidate:
           stack.emplace(prefix_len, edge.dest_);
@@ -96,12 +96,12 @@ public:
   void insert(const T_Key& key, const T_Value& value) {
     //Insert every suffix of the key:
     T_Key suffix = key;
-    while(!suffix.empty()) {
+    while(!str_empty(suffix)) {
       //std::cout << "insert(): suffix=" << suffix << ", value=" << value <<std::endl;
       insert_single(suffix, value);
 
       // Remove the first character:
-      suffix = suffix.substr(1);
+      suffix = str_substr(suffix, 1);
     }
   }
 
@@ -159,8 +159,8 @@ private:
 
     /*
     const std::size_t prefix_start_pos = 0;
-    const auto str_len = str.size() - str_start_pos;
-    const auto prefix_len = prefix.size() - prefix_start_pos;
+    const auto str_len = str_size(str) - str_start_pos;
+    const auto prefix_len = str_size(prefix.size()) - prefix_start_pos;
 
     // prefix cannot be a prefix of str if it is longer than str:
     if (prefix_len > str_len) {
@@ -195,8 +195,8 @@ private:
     return std::distance(str_start, iters.first);
 
     /*
-    const auto str_len = str.size() - str_start_pos;
-    const auto prefix_len = prefix.size() - prefix_start_pos;
+    const auto str_len = str_size(str.size()) - str_start_pos;
+    const auto prefix_len = str_size(prefix.size()) - prefix_start_pos;
 
     const auto len = std::min(str_len, prefix_len);
     const auto str_end = str_start_pos + len;
@@ -218,22 +218,22 @@ private:
 
   void insert_single(const T_Key& key, const T_Value& value) {
     // std::cout << "insert(): key=" << key << std::endl;
-    if (key.empty()) {
+    if (str_empty(key)) {
       return;
     }
 
     auto node = &root_;
     std::size_t key_pos = 0;
-    const auto key_size = key.size();
+    const auto key_size = str_size(key);
     while (key_pos < key_size) {
-      //std::cout << "insert(): remaining key=" << key.substr(key_pos) << std::endl;
+      //std::cout << "insert(): remaining key=" << str_substr(key, key_pos) << std::endl;
       //Choose the child node, if any:
       Node* next = nullptr;
       for (auto& edge : node->children_) {
         const auto& part = edge.part_;
 
         const auto prefix_len = common_prefix(part, 0, key, key_pos);
-        const auto part_len = part.size();
+        const auto part_len = str_size(part);
         //std::cout << "key=" << key << ", key_pos=" << key_pos << ", part=" << part << "\n";
         //If the edge's part is a prefix of the remaining key:
         if (prefix_len == 0) {
@@ -244,9 +244,9 @@ private:
 
           // Split it,
           // adding a new intermediate node in it original node's place, with the original node as a child.
-          const auto prefix = part.substr(0, prefix_len);
-          //std::cout << "  splitting part=" << part << ", at key prefix: " << key.substr(0, key_pos + 1) << ", with prefix=" << prefix << ", values size: " << dest->values_.size() << std::endl;
-          const auto suffix_part = part.substr(prefix_len);
+          const auto prefix = str_substr(part, 0, prefix_len);
+          //std::cout << "  splitting part=" << part << ", at key prefix: " << str_substr(key, 0, key_pos + 1) << ", with prefix=" << prefix << ", values size: " << dest->values_.size() << std::endl;
+          const auto suffix_part = str_substr(part, prefix_len);
           //assert(part == (prefix + suffix_part));
           //std::cout << "    suffix_part=" << suffix_part << std::endl;
 
@@ -289,7 +289,7 @@ private:
     }
 
     // Add a node for the remaining characters:
-    const auto suffix = key.substr(key_pos);
+    const auto suffix = str_substr(key, key_pos);
     //std::cout << "Adding suffix: " << suffix << ", with value: " << value << '\n';
 
     const auto next = new Node;
@@ -309,13 +309,13 @@ private:
     std::size_t key_pos = 0;
     const auto key_size = key.size();
     while (key_pos < key_size) {
-      //std::cout << "find_node(): remaining key=" << key.substr(key_pos) << std::endl;
+      //std::cout << "find_node(): remaining key=" << str_substr(key, key_pos) << std::endl;
       //std::cout << "  children_ size: " << node->children_.size() << std::endl;
       //Choose the child node, if any:
       Node* next = nullptr;
       for (const auto& edge : node->children_) {
         const auto& part = edge.part_;
-        const auto part_size = part.size();
+        const auto part_size = str_size(part);
         //std::cout << "  key=" << key << ", key_pos=" << key_pos << ", part=" << part << "\n";
         if(!has_prefix(key, key_pos, part)) {
           continue;
@@ -341,6 +341,26 @@ private:
 
     //std::cout << "node: " << node << std::endl;
     return node->has_value() ? node : nullptr;
+  }
+
+  static
+  inline decltype(auto) str_size(const T_Key& key) {
+    return key.size();
+  }
+
+  static
+  inline bool str_empty(const T_Key& key) {
+    return key.empty();
+  }
+
+  static
+  inline decltype(auto) str_substr(const T_Key& key, std::size_t start) {
+    return key.substr(start);
+  }
+
+  static
+  inline decltype(auto) str_substr(const T_Key& key, std::size_t start, std::size_t len) {
+    return key.substr(start, len);
   }
 
   Node root_;
