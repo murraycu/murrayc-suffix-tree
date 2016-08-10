@@ -28,18 +28,18 @@ public:
     return node != nullptr;
   };
 
-  /** Finds the values for any key contains this substring.
+  /** Finds the values for any key containing this substring.
    */
-  std::set<T_Value> find_candidate_values(const T_Key& prefix) const {
+  std::set<T_Value> find_candidate_values(const T_Key& substr) const {
     std::set<T_Value> result;
 
-    if (prefix.empty()) {
+    if (substr.empty()) {
       return result;
     }
 
-    const auto prefix_len = prefix.size();
+    const auto substr_len = substr.size();
 
-    using Item = std::pair<std::size_t /* prefix_pos */, const Node*>;
+    using Item = std::pair<std::size_t /* substr_pos */, const Node*>;
     std::stack<Item> stack;
     stack.emplace(0, &root_);
 
@@ -47,26 +47,29 @@ public:
       const auto item = stack.top();
       stack.pop();
 
-      const auto prefix_pos = item.first;
+      const auto substr_pos = item.first;
       const auto node = item.second;
 
-      //If we have already used all of the prefix,
+      //If we have already used all of the substring,
       //then use all subsequent leaf nodes.
-      if (prefix_pos >= prefix_len) {
+      if (substr_pos >= substr_len) {
         if (node->has_value()) {
           result.insert(std::cbegin(node->values_), std::cend(node->values_));
+
+          //And continue to examine children, because they can have values too.
         }
       }
 
       for (auto edge : node->children_) {
         const auto& edge_part = edge.part_;
 
-        if (has_prefix(prefix, prefix_pos, edge_part, 0)) {
-          // The part is a prefix of the remaining key, so follow it:
-          stack.emplace(prefix_pos + str_size(edge_part), edge.dest_);
-        } else if (has_prefix(edge_part, 0, prefix, prefix_pos)) {
-          // The remaining key is a prefix of the part, so it is a candidate:
-          stack.emplace(prefix_len, edge.dest_);
+        if (has_prefix(substr, substr_pos, edge_part, 0)) {
+          // The whole part is a prefix of the remaining substring, so follow it:
+          stack.emplace(substr_pos + str_size(edge_part), edge.dest_);
+        } else if (has_prefix(edge_part, 0, substr, substr_pos)) {
+          // The whole remaining substr is a prefix of the part, so it is a candidate:
+          // We will then use the value because substr_pos==substr_len.
+          stack.emplace(substr_len, edge.dest_);
         }
       }
     }
