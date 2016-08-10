@@ -11,11 +11,6 @@ class SuffixTree {
 public:
   using T_Key = std::string;
 
-  /// Start and end (1 past last position) of a substring in text_;
-  using T_Key_Internal = std::pair<const char*, const char*>;
-
-  using T_Value_Internal = std::pair<T_Key_Internal, T_Value>;
-
   SuffixTree() {
   }
 
@@ -23,7 +18,7 @@ public:
     const auto start = key.c_str();
     const auto end = start + key.size();
     const auto substr = std::make_pair(start, end);
-    insert(substr, std::make_pair(substr, value));
+    insert(substr, value);
   }
 
   bool exists(const T_Key& key) const {
@@ -33,8 +28,8 @@ public:
 
   /** Finds the values for any key contains this substring.
    */
-  std::set<T_Value_Internal> find_candidate_values(const T_Key& prefix) const {
-    std::set<T_Value_Internal> result;
+  std::set<T_Value> find_candidate_values(const T_Key& prefix) const {
+    std::set<T_Value> result;
 
     //std::cout << "find_candidates(): prefix=" << prefix << std::endl;
     if (prefix.empty()) {
@@ -82,6 +77,9 @@ public:
 
 private:
 
+  /// Start and end (1 past last position) of a substring in text_;
+  using T_Key_Internal = std::pair<const char*, const char*>;
+
   class Node {
   public:
     class Edge {
@@ -110,10 +108,10 @@ private:
     std::vector<Edge> children_;
 
     // TODO: Wastes space on non-leaves.
-    std::vector<T_Value_Internal> values_;
+    std::vector<T_Value> values_;
   };
 
-  void insert(const T_Key_Internal& key, const T_Value_Internal& value) {
+  void insert(const T_Key_Internal& key, const T_Value& value) {
     //std::cout << "debug: insert(): key.first=" << static_cast<const void*>(key.first) << ", second=" << static_cast<const void*>(key.second) << std::endl;
     //Insert every suffix of the key:
     T_Key_Internal suffix = key;
@@ -230,7 +228,7 @@ private:
   }
   */
 
-  void insert_single(const T_Key_Internal& key, const T_Value_Internal& value) {
+  void insert_single(const T_Key_Internal& key, const T_Value& value) {
     //std::cout << "insert(): key=" << debug_key(key) << std::endl;
     if (str_empty(key)) {
       return;
