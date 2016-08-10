@@ -35,6 +35,9 @@ void test_full_text_index() {
   timer.stop();
   timer.report();
 
+  assert(suffix_tree.exists("Pip"));
+  assert(!suffix_tree.exists("Pi"));
+
   std::cout << "SuffixTree: Search:" << std::endl;
   timer.start();
   const auto results = suffix_tree.find_candidate_values("xio");
