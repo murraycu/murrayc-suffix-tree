@@ -9,22 +9,20 @@
 
 static
 void test_full_text_index() {
-  std::ifstream stream;
-  stream.open("src/trees/suffix_tree/test_pg1400.txt");
-  assert(stream.is_open());
+  std::ifstream in;
+  in.open("src/trees/suffix_tree/test_pg1400.txt");
+  assert(in.is_open());
+  std::string str;
+  in.seekg(0, std::ios::end);
+  str.resize(in.tellg());
+  in.seekg(0, std::ios::beg);
+  in.read(&str[0], str.size());
+  in.close();
 
   std::cout << "SuffixTree: Construction:" << std::endl;
   boost::timer::auto_cpu_timer timer;
-  using Tree = SuffixTree<std::string, std::size_t>;
-  Tree suffix_tree;
-
-  std::size_t pos = 0;
-  while(stream) {
-    std::string str;
-    stream >> str;
-    suffix_tree.insert(str, pos);
-    ++pos;
-  }
+  using Tree = SuffixTree;
+  Tree suffix_tree(str.c_str(), str.size());
   timer.stop();
   timer.report();
 
@@ -34,36 +32,11 @@ void test_full_text_index() {
   timer.stop();
   timer.report();
   for (const auto position : positions) {
-    std::cout << position << ", ";
+    std::cout << static_cast<const void*>(position.first) << ": " << std::string(position.first, std::distance(position.first, position.second)) << std::endl;
   }
-  std::cout << std::endl;
 }
 
 int main() {
-  using Tree = SuffixTree<std::string, int>;
-  Tree suffix_tree;
-  suffix_tree.insert("banana", 1);
-  suffix_tree.insert("banana", 9);
-  suffix_tree.insert("bandana", 2);
-  suffix_tree.insert("foo", 3);
-  suffix_tree.insert("foobar", 4);
-
-  //These test the Suffix Tree's knowledge of substrings,
-  //instead of just prefixes.
-  assert(suffix_tree.exists("oo"));
-  assert(suffix_tree.exists("ana"));
-
-  //TODO: Compare without caring about the order:
-  const std::set<int> expected_candidates = {1, 9, 2};
-  const auto candidates = suffix_tree.find_candidate_values("an");
-  assert(candidates == expected_candidates);
-/*
-  std::cout << "candidates size: " << candidates.size() << std::endl;
-  for (const auto& value : candidates) {
-    std::cout << "candidate: " << value << '\n';
-  }
-*/
-
   test_full_text_index();
 
   return EXIT_SUCCESS;

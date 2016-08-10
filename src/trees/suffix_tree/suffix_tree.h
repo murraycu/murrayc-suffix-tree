@@ -6,43 +6,23 @@
 #include <set>
 #include <stack>
 
-template <typename T_Key, typename T_Value>
 class SuffixTree {
 public:
+  using T_Key = std::string;
+  using T_Value = std::pair<const char*, const char*>;
+
+  /// Start and end (1 past last position) of a substring in text_;
+  using T_Key_Internal = std::pair<const char*, const char*>;
+
+  SuffixTree(const char* text, std::size_t text_len)
+  : text_(text), text_len_(text_len) {
+    populate();
+  }
+
   bool exists(const T_Key& key) const {
     const auto node = find_node(key);
     return node != nullptr;
   };
-
-  /** Get the first value associates with the key.
-   *
-   * Returns T_Value() if the key was not found.
-   */
-  T_Value get_value(const T_Key& key) const {
-    const auto node = find_node(key);
-    if (!node) {
-      return T_Value();
-    }
-
-    if (node->values_.empty()) {
-      return T_Value();
-    }
-
-    return node->values_[0];
-  }
-
-  /** Get the first value associates with the key.
-   *
-   * Returns T_Value() if the key was not found.
-   */
-  std::vector<T_Value> get_values(const T_Key& key) const {
-    const auto node = find_node(key);
-    if (!node) {
-      return {};
-    }
-
-    return node->values_;
-  }
 
   /** Finds the values for any key contains this substring.
    */
@@ -93,36 +73,13 @@ public:
     return result;
   }
 
-  void insert(const T_Key& key, const T_Value& value) {
-    //Insert every suffix of the key:
-    T_Key suffix = key;
-    while(!str_empty(suffix)) {
-      //std::cout << "insert(): suffix=" << suffix << ", value=" << value <<std::endl;
-      insert_single(suffix, value);
-
-      // Remove the first character:
-      suffix = str_substr(suffix, 1);
-    }
-  }
-
-
-  void remove(const T_Key& key) {
-    auto node = find_node(key);
-    if (!node) {
-      return;
-    }
-
-    //TODO: Each node needs a pointer to its parent.
-    //We then need to ask its parent to delete its edge to this node,
-    //and then combine itself with its own parent if it now has only one edge.
-  }
-
 private:
+
   class Node {
   public:
     class Edge {
     public:
-      Edge(const T_Key& part, Node* dest)
+      Edge(const T_Key_Internal& part, Node* dest)
         : part_(part),
           dest_(dest) {
       }
@@ -132,7 +89,7 @@ private:
       Edge(Edge&& src) = default;
       Edge& operator=(Edge&& src) = default;
 
-      T_Key part_ = T_Key();
+      T_Key_Internal part_;
       Node* dest_ = nullptr;
     };
 
@@ -149,11 +106,50 @@ private:
     std::vector<T_Value> values_;
   };
 
+  void populate() {
+    const auto end = text_ + text_len_; 
+    const char* pos = text_;
+    const char* word_start = pos;
+    while (pos < end) {
+      if (std::isspace(*pos)) {
+        const auto word_end = pos;
+        const auto substr = std::make_pair(word_start, word_end);
+        insert(substr, substr);
+        word_start = word_end + 1;
+      }
+
+      ++pos;
+    }
+  }
+
+  void insert(const T_Key_Internal& key, const T_Value& value) {
+    //std::cout << "debug: insert(): key.first=" << static_cast<const void*>(key.first) << ", second=" << static_cast<const void*>(key.second) << std::endl;
+    //Insert every suffix of the key:
+    T_Key_Internal suffix = key;
+    while(!str_empty(suffix)) {
+      //std::cout << "insert(): suffix=" << suffix << ", value=" << value <<std::endl;
+      insert_single(suffix, value);
+
+      // Remove the first character:
+      suffix = str_substr(suffix, 1);
+      //std::cout << "suffix: first=" << static_cast<const void*>(suffix.first) << ", second=" << static_cast<const void*>(suffix.second) << std::endl;
+    }
+  }
+
   static
-  bool has_prefix(const std::string& str, std::size_t str_start_pos, const std::string& prefix, std::size_t prefix_start_pos = 0) {
+  bool has_prefix(const T_Key& str, std::size_t str_start_pos, const T_Key_Internal& prefix, std::size_t prefix_start_pos = 0) {
+    const auto prefix_start = prefix.first + prefix_start_pos;
+    const auto prefix_end = prefix.second;
+    const auto iters = std::mismatch(std:: begin(str) + str_start_pos, std::end(str),
+        prefix_start, prefix_end);
+    return iters.second == prefix_end;
+  }
+
+  static
+  bool has_prefix(const T_Key_Internal& str, std::size_t str_start_pos, const T_Key& prefix, std::size_t prefix_start_pos = 0) {
     const auto prefix_start = std::begin(prefix) + prefix_start_pos;
     const auto prefix_end = std::end(prefix);
-    const auto iters = std::mismatch(std:: begin(str) + str_start_pos, std::end(str),
+    const auto iters = std::mismatch(str.first + str_start_pos, str.second,
         prefix_start, prefix_end);
     return iters.second == prefix_end;
 
@@ -187,11 +183,11 @@ private:
   }
 
   static
-  std::size_t common_prefix(const std::string& str, std::size_t str_start_pos, const std::string& prefix, std::size_t prefix_start_pos) {
+  std::size_t common_prefix(const T_Key_Internal& str, std::size_t str_start_pos, const T_Key_Internal& prefix, std::size_t prefix_start_pos) {
     //TODO: Use std::mismatch().
-    const auto str_start = std::begin(str) + str_start_pos;
-    const auto iters = std::mismatch(str_start, std::end(str),
-        std::begin(prefix) + prefix_start_pos, std::end(prefix));
+    const auto str_start = str.first + str_start_pos;
+    const auto iters = std::mismatch(str_start, str.second,
+        prefix.first + prefix_start_pos, prefix.second);
     return std::distance(str_start, iters.first);
 
     /*
@@ -216,8 +212,35 @@ private:
     */
   }
 
-  void insert_single(const T_Key& key, const T_Value& value) {
-    // std::cout << "insert(): key=" << key << std::endl;
+  /*
+  static std::string debug_key(const T_Key_Internal& key) {
+    if (key.first == nullptr) {
+      return std::string();
+    }
+
+    if (key.second <= key.first) {
+      return std::string();
+    }
+
+    const auto len = std::distance(key.first, key.second);
+    return debug_key(key.first, len);
+  }
+
+  static std::string debug_key(const char* first, std::size_t len) {
+    if (first == nullptr) {
+      return std::string();
+    }
+
+    if (len == 0) {
+      return std::string();
+    }
+
+    return std::string(first, len); 
+  }
+  */
+
+  void insert_single(const T_Key_Internal& key, const T_Value& value) {
+    //std::cout << "insert(): key=" << debug_key(key) << std::endl;
     if (str_empty(key)) {
       return;
     }
@@ -225,8 +248,10 @@ private:
     auto node = &root_;
     std::size_t key_pos = 0;
     const auto key_size = str_size(key);
+    //std::cout << "debug: insert_single(): key_size=" << key_size << std::endl;
     while (key_pos < key_size) {
-      //std::cout << "insert(): remaining key=" << str_substr(key, key_pos) << std::endl;
+      //std::cout << "debug: insert(): remaining key=" << key_pos << std::endl;
+      //std::cout << "  debug: node=" << node << std::endl;
       //Choose the child node, if any:
       Node* next = nullptr;
       for (auto& edge : node->children_) {
@@ -234,7 +259,8 @@ private:
 
         const auto prefix_len = common_prefix(part, 0, key, key_pos);
         const auto part_len = str_size(part);
-        //std::cout << "key=" << key << ", key_pos=" << key_pos << ", part=" << part << "\n";
+        //std::cout << "key=" << debug_key(key) << ", key_pos=" << key_pos << ", part=" << debug_key(part) <<
+        //  ", prefix_len=" << prefix_len << ", part_len=" << part_len << "\n";
         //If the edge's part is a prefix of the remaining key:
         if (prefix_len == 0) {
           // No match.
@@ -245,7 +271,9 @@ private:
           // Split it,
           // adding a new intermediate node in it original node's place, with the original node as a child.
           const auto prefix = str_substr(part, 0, prefix_len);
-          //std::cout << "  splitting part=" << part << ", at key prefix: " << str_substr(key, 0, key_pos + 1) << ", with prefix=" << prefix << ", values size: " << dest->values_.size() << std::endl;
+          assert(str_size(prefix) == prefix_len);
+          //std::cout << "  splitting part=" << debug_key(part) << ", at key prefix: " << debug_key(str_substr(key, 0, key_pos + 1)) <<
+          //  ", with prefix=" << debug_key(prefix) << std::endl;
           const auto suffix_part = str_substr(part, prefix_len);
           //assert(part == (prefix + suffix_part));
           //std::cout << "    suffix_part=" << suffix_part << std::endl;
@@ -344,25 +372,38 @@ private:
   }
 
   static
-  inline decltype(auto) str_size(const T_Key& key) {
-    return key.size();
+  inline std::size_t str_size(const T_Key_Internal& key) {
+    if (key.second <= key.first) {
+      return 0;
+    }
+
+    return key.second - key.first;
   }
 
   static
-  inline bool str_empty(const T_Key& key) {
-    return key.empty();
+  inline bool str_empty(const T_Key_Internal& key) {
+    return key.first >= key.second;
   }
 
   static
-  inline decltype(auto) str_substr(const T_Key& key, std::size_t start) {
-    return key.substr(start);
+  inline T_Key_Internal str_substr(const T_Key_Internal& key, std::size_t start) {
+    const auto start_used = key.first + start;
+    return std::make_pair(
+      (start_used < key.second) ? start_used : key.second,
+      key.second);
   }
 
   static
-  inline decltype(auto) str_substr(const T_Key& key, std::size_t start, std::size_t len) {
-    return key.substr(start, len);
+  inline T_Key_Internal str_substr(const T_Key_Internal& key, std::size_t start, std::size_t len) {
+    const auto start_used = key.first + start;
+    const auto end_used = key.first + len;
+    return std::make_pair(
+      (start_used < key.second) ? start_used : key.second,
+      (end_used < key.second) ? end_used : key.second);
   }
 
+  const char* const text_;
+  const std::size_t text_len_;
   Node root_;
 };
 
