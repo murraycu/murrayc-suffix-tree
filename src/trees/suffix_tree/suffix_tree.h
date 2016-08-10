@@ -33,15 +33,12 @@ public:
   std::set<T_Value> find_candidate_values(const T_Key& prefix) const {
     std::set<T_Value> result;
 
-    //std::cout << "find_candidates(): prefix=" << prefix << std::endl;
     if (prefix.empty()) {
       return result;
     }
 
     const auto prefix_len = prefix.size();
 
-    // Find all the nodes whose descendants (including themselves) should be in the result,
-    // putting these in a second stack.
     using Item = std::pair<std::size_t /* prefix_pos */, const Node*>;
     std::stack<Item> stack;
     stack.emplace(0, &root_);
