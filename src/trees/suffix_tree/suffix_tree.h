@@ -140,92 +140,16 @@ private:
     const auto iters = std::mismatch(str.first + str_start_pos, str.second,
         prefix_start, prefix_end);
     return iters.second == prefix_end;
-
-    /*
-    const std::size_t prefix_start_pos = 0;
-    const auto str_len = str_size(str) - str_start_pos;
-    const auto prefix_len = str_size(prefix.size()) - prefix_start_pos;
-
-    // prefix cannot be a prefix of str if it is longer than str:
-    if (prefix_len > str_len) {
-      return false;
-    }
-
-    const auto len = std::min(str_len, prefix_len);
-    const auto end = str_start_pos + len;
-
-    auto prefix_iter = std::cbegin(prefix) + prefix_start_pos;
-    std::size_t i = str_start_pos;
-    for (; i < end; ++i) {
-      if (str[i] != *prefix_iter) {
-        // Some part of the prefix doesn't match:
-        return false;
-      }
-
-      ++prefix_iter;
-    }
-
-    //All characters in prefix match at the start of str:
-    return true;
-    */
   }
 
   static
   std::size_t common_prefix(const T_Key_Internal& str, std::size_t str_start_pos, const T_Key_Internal& prefix, std::size_t prefix_start_pos) {
-    //TODO: Use std::mismatch().
     const auto str_start = str.first + str_start_pos;
     const auto iters = std::mismatch(str_start, str.second,
         prefix.first + prefix_start_pos, prefix.second);
     return std::distance(str_start, iters.first);
-
-    /*
-    const auto str_len = str_size(str.size()) - str_start_pos;
-    const auto prefix_len = str_size(prefix.size()) - prefix_start_pos;
-
-    const auto len = std::min(str_len, prefix_len);
-    const auto str_end = str_start_pos + len;
-
-    std::size_t i_str = str_start_pos;
-    std::size_t i_prefix = prefix_start_pos;
-    while(i_str < str_end) {
-      if(str[i_str] != prefix[i_prefix]) {
-        break;
-      }
-
-      ++i_str;
-      ++i_prefix;
-    }
-
-    return i_str - str_start_pos;
-    */
   }
 
-  /*
-  static std::string debug_key(const T_Key_Internal& key) {
-    if (key.first == nullptr) {
-      return std::string();
-    }
-
-    if (key.second <= key.first) {
-      return std::string();
-    }
-
-    const auto len = std::distance(key.first, key.second);
-    return debug_key(key.first, len);
-  }
-
-  static std::string debug_key(const char* first, std::size_t len) {
-    if (first == nullptr) {
-      return std::string();
-    }
-
-    if (len == 0) {
-      return std::string();
-    }
-
-    return std::string(first, len); 
-  }
-  */
 
   void insert_single(const T_Key_Internal& key, const T_Value& value) {
     //std::cout << "insert(): key=" << debug_key(key) << std::endl;
@@ -389,6 +313,33 @@ private:
       (start_used < key.second) ? start_used : key.second,
       (end_used < key.second) ? end_used : key.second);
   }
+
+  /*
+  static std::string debug_key(const T_Key_Internal& key) {
+    if (key.first == nullptr) {
+      return std::string();
+    }
+
+    if (key.second <= key.first) {
+      return std::string();
+    }
+
+    const auto len = std::distance(key.first, key.second);
+    return debug_key(key.first, len);
+  }
+
+  static std::string debug_key(const char* first, std::size_t len) {
+    if (first == nullptr) {
+      return std::string();
+    }
+
+    if (len == 0) {
+      return std::string();
+    }
+
+    return std::string(first, len);
+  }
+  */
 
   Node root_;
 };
