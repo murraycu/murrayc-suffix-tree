@@ -55,7 +55,7 @@ public:
       //then use all subsequent leaf nodes.
       if (prefix_pos >= prefix_len) {
         if (node->has_value()) {
-          result.insert(std::begin(node->values_), std::end(node->values_));
+          result.insert(std::cbegin(node->values_), std::cend(node->values_));
         }
       }
 
@@ -129,15 +129,15 @@ private:
   bool has_prefix(const T_Key& str, std::size_t str_start_pos, const T_Key_Internal& prefix, std::size_t prefix_start_pos = 0) {
     const auto prefix_start = prefix.first + prefix_start_pos;
     const auto prefix_end = prefix.second;
-    const auto iters = std::mismatch(std:: begin(str) + str_start_pos, std::end(str),
+    const auto iters = std::mismatch(std::cbegin(str) + str_start_pos, std::cend(str),
         prefix_start, prefix_end);
     return iters.second == prefix_end;
   }
 
   static
   bool has_prefix(const T_Key_Internal& str, std::size_t str_start_pos, const T_Key& prefix, std::size_t prefix_start_pos = 0) {
-    const auto prefix_start = std::begin(prefix) + prefix_start_pos;
-    const auto prefix_end = std::end(prefix);
+    const auto prefix_start = std::cbegin(prefix) + prefix_start_pos;
+    const auto prefix_end = std::cend(prefix);
     const auto iters = std::mismatch(str.first + str_start_pos, str.second,
         prefix_start, prefix_end);
     return iters.second == prefix_end;
@@ -155,7 +155,7 @@ private:
     const auto len = std::min(str_len, prefix_len);
     const auto end = str_start_pos + len;
 
-    auto prefix_iter = std::begin(prefix) + prefix_start_pos;
+    auto prefix_iter = std::cbegin(prefix) + prefix_start_pos;
     std::size_t i = str_start_pos;
     for (; i < end; ++i) {
       if (str[i] != *prefix_iter) {
