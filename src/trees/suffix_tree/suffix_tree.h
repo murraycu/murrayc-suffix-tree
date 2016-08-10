@@ -14,9 +14,8 @@ public:
   /// Start and end (1 past last position) of a substring in text_;
   using T_Key_Internal = std::pair<const char*, const char*>;
 
-  SuffixTree(const char* text, std::size_t text_len)
-  : text_(text), text_len_(text_len) {
-    populate();
+  SuffixTree(const char* text, std::size_t text_len) {
+    populate(text, text_len);
   }
 
   bool exists(const T_Key& key) const {
@@ -106,9 +105,9 @@ private:
     std::vector<T_Value> values_;
   };
 
-  void populate() {
-    const auto end = text_ + text_len_; 
-    const char* pos = text_;
+  void populate(const char* text, std::size_t text_len) {
+    const auto end = text + text_len;
+    const char* pos = text;
     const char* word_start = pos;
     while (pos < end) {
       if (std::isspace(*pos)) {
@@ -402,8 +401,6 @@ private:
       (end_used < key.second) ? end_used : key.second);
   }
 
-  const char* const text_;
-  const std::size_t text_len_;
   Node root_;
 };
 
