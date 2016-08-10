@@ -22,7 +22,7 @@ void test_full_text_index() {
     ++pos;
   }
 
-  const auto positions = suffix_tree.find_candidate_values("Pip");
+  const auto positions = suffix_tree.find_candidate_values("xio");
   for (const auto position : positions) {
     std::cout << position << ", ";
   }
