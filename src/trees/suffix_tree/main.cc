@@ -25,7 +25,7 @@ void test_full_text_index() {
 
   std::cout << "SuffixTree: Construction:" << std::endl;
   boost::timer::auto_cpu_timer timer;
-  using Tree = SuffixTree<std::size_t>;
+  using Tree = SuffixTree<std::string, std::size_t>;
   Tree suffix_tree;
   std::size_t pos = 0;
   for (const auto& str : strings) {

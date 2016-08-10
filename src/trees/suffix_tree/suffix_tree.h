@@ -6,11 +6,13 @@
 #include <set>
 #include <stack>
 
-template <typename T_Value>
+/**
+ * @tparam T_Key For instance, std::string, or something other container.
+ * @tparam T_Value The value to associate with each inserted key.
+ */
+template <typename T_Key, typename T_Value>
 class SuffixTree {
 public:
-  using T_Key = std::string;
-
   SuffixTree() {
   }
 
@@ -78,7 +80,7 @@ public:
 private:
 
   /// Start and end (1 past last position) of a substring in text_;
-  using T_Key_Internal = std::pair<T_Key::const_iterator, T_Key::const_iterator>;
+  using T_Key_Internal = std::pair<typename T_Key::const_iterator, typename T_Key::const_iterator>;
 
   class Node {
   public:
