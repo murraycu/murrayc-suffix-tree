@@ -5,12 +5,16 @@
 
 #include "suffix_tree.h"
 
+#include <boost/timer/timer.hpp>
+
 static
 void test_full_text_index() {
   std::ifstream stream;
   stream.open("src/trees/suffix_tree/test_pg1400.txt");
   assert(stream.is_open());
 
+  std::cout << "SuffixTree: Construction:" << std::endl;
+  boost::timer::auto_cpu_timer timer;
   using Tree = SuffixTree<std::string, std::size_t>;
   Tree suffix_tree;
 
@@ -21,8 +25,14 @@ void test_full_text_index() {
     suffix_tree.insert(str, pos);
     ++pos;
   }
+  timer.stop();
+  timer.report();
 
+  std::cout << "SuffixTree: Search:" << std::endl;
+  timer.start();
   const auto positions = suffix_tree.find_candidate_values("xio");
+  timer.stop();
+  timer.report();
   for (const auto position : positions) {
     std::cout << position << ", ";
   }
