@@ -18,7 +18,7 @@ public:
 
   void insert(const T_Key& key, const T_Value& value) {
     const auto start = std::cbegin(key);
-    const auto end = start + key.size();
+    const auto end = start + std::size(key);
     const auto substr = std::make_pair(start, end);
     insert(substr, value);
   }
@@ -37,7 +37,7 @@ public:
       return result;
     }
 
-    const auto substr_len = substr.size();
+    const auto substr_len = std::size(substr);
 
     using Item = std::pair<std::size_t /* substr_pos */, const Node*>;
     std::stack<Item> stack;
@@ -262,7 +262,7 @@ private:
 
     auto node = &root_;
     std::size_t key_pos = 0;
-    const auto key_size = key.size();
+    const auto key_size = std::size(key);
     while (key_pos < key_size) {
       //std::cout << "find_node(): remaining key=" << str_substr(key, key_pos) << std::endl;
       //std::cout << "  children_ size: " << node->children_.size() << std::endl;
