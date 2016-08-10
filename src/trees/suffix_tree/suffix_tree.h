@@ -6,16 +6,24 @@
 #include <set>
 #include <stack>
 
+template <typename T_Value>
 class SuffixTree {
 public:
   using T_Key = std::string;
-  using T_Value = std::pair<const char*, const char*>;
 
   /// Start and end (1 past last position) of a substring in text_;
   using T_Key_Internal = std::pair<const char*, const char*>;
 
-  SuffixTree(const char* text, std::size_t text_len) {
-    populate(text, text_len);
+  using T_Value_Internal = std::pair<T_Key_Internal, T_Value>;
+
+  SuffixTree() {
+  }
+
+  void insert(const T_Key& key, const T_Value& value) {
+    const auto start = key.c_str();
+    const auto end = start + key.size();
+    const auto substr = std::make_pair(start, end);
+    insert(substr, std::make_pair(substr, value));
   }
 
   bool exists(const T_Key& key) const {
@@ -25,8 +33,8 @@ public:
 
   /** Finds the values for any key contains this substring.
    */
-  std::set<T_Value> find_candidate_values(const T_Key& prefix) const {
-    std::set<T_Value> result;
+  std::set<T_Value_Internal> find_candidate_values(const T_Key& prefix) const {
+    std::set<T_Value_Internal> result;
 
     //std::cout << "find_candidates(): prefix=" << prefix << std::endl;
     if (prefix.empty()) {
@@ -102,26 +110,10 @@ private:
     std::vector<Edge> children_;
 
     // TODO: Wastes space on non-leaves.
-    std::vector<T_Value> values_;
+    std::vector<T_Value_Internal> values_;
   };
 
-  void populate(const char* text, std::size_t text_len) {
-    const auto end = text + text_len;
-    const char* pos = text;
-    const char* word_start = pos;
-    while (pos < end) {
-      if (std::isspace(*pos)) {
-        const auto word_end = pos;
-        const auto substr = std::make_pair(word_start, word_end);
-        insert(substr, substr);
-        word_start = word_end + 1;
-      }
-
-      ++pos;
-    }
-  }
-
-  void insert(const T_Key_Internal& key, const T_Value& value) {
+  void insert(const T_Key_Internal& key, const T_Value_Internal& value) {
     //std::cout << "debug: insert(): key.first=" << static_cast<const void*>(key.first) << ", second=" << static_cast<const void*>(key.second) << std::endl;
     //Insert every suffix of the key:
     T_Key_Internal suffix = key;
@@ -238,7 +230,7 @@ private:
   }
   */
 
-  void insert_single(const T_Key_Internal& key, const T_Value& value) {
+  void insert_single(const T_Key_Internal& key, const T_Value_Internal& value) {
     //std::cout << "insert(): key=" << debug_key(key) << std::endl;
     if (str_empty(key)) {
       return;
