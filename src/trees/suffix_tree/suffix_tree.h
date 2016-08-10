@@ -81,6 +81,18 @@ private:
 
   class Node {
   public:
+    Node() = default;
+    Node(const Node& src) = default;
+    Node& operator=(const Node& src) = default;
+    Node(Node&& src) = default;
+    Node& operator=(Node&& src) = default;
+
+    ~Node() {
+      for(auto edge : children_) {
+        delete edge.dest_;
+      }
+    }
+
     class Edge {
     public:
       Edge(const T_Key_Internal& part, Node* dest)
