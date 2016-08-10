@@ -15,7 +15,7 @@ public:
   }
 
   void insert(const T_Key& key, const T_Value& value) {
-    const auto start = key.c_str();
+    const auto start = std::cbegin(key);
     const auto end = start + key.size();
     const auto substr = std::make_pair(start, end);
     insert(substr, value);
@@ -78,7 +78,7 @@ public:
 private:
 
   /// Start and end (1 past last position) of a substring in text_;
-  using T_Key_Internal = std::pair<const char*, const char*>;
+  using T_Key_Internal = std::pair<T_Key::const_iterator, T_Key::const_iterator>;
 
   class Node {
   public:
