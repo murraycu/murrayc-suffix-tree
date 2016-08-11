@@ -23,6 +23,11 @@ public:
     insert(substr, value);
   }
 
+  void insert(const typename T_Key::const_iterator& start, const typename T_Key::const_iterator& end, const T_Value& value) {
+    const auto substr = std::make_pair(start, end);
+    insert(substr, value);
+  }
+
   bool exists(const T_Key& key) const {
     const auto node = find_node(key);
     return node != nullptr;
@@ -80,7 +85,8 @@ public:
 private:
 
   /// Start and end (1 past last position) of a substring in text_;
-  using T_Key_Internal = std::pair<typename T_Key::const_iterator, typename T_Key::const_iterator>;
+  using KeyIterator = typename T_Key::const_iterator;
+  using T_Key_Internal = std::pair<KeyIterator, KeyIterator>;
 
   class Node {
   public:
