@@ -1,7 +1,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <cassert>
-#include "radix_tree.h"
+#include <murrayc-suffix-tree/radix_tree.h>
 
 /*
 void test_has_prefix() {

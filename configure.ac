@@ -1,7 +1,7 @@
 AC_INIT([murrayc-suffix-tree],[0.0.1])
 AC_PREREQ(2.63)
 
-AC_CONFIG_SRCDIR([src/trees/suffix_tree/suffix_tree.h])
+AC_CONFIG_SRCDIR([murrayc-suffix-tree/suffix_tree.h])
 AC_CONFIG_MACRO_DIR([macros])
 $AC_CONFIG_HEADERS([config.h])
 

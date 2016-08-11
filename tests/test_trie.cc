@@ -1,0 +1,39 @@
+#include <cstdlib>
+#include <iostream>
+#include <vector>
+#include <cassert>
+#include <stack>
+#include <utility>
+#include <murrayc-suffix-tree/trie.h>
+
+int main() {
+
+  Trie<std::string, int> trie;
+  trie.insert("banana", 1);
+  trie.insert("bandana", 2);
+  trie.insert("foo", 3);
+  trie.insert("foobar", 4);
+
+  assert(trie.exists("banana"));
+  assert(trie.get_value("banana") == 1);
+  assert(trie.exists("foo"));
+  assert(trie.get_value("foo") == 3);
+
+  assert(!trie.exists("foop"));
+  assert(trie.get_value("foop") == 0);
+  assert(!trie.exists("ban"));
+  assert(trie.get_value("ban") == 0);
+
+  const auto candidates = trie.find_candidates("ban");
+  //for (const auto candidate : candidates) {
+  //  std::cout << "candidate: " << candidate << '\n';
+  //}
+
+  // TODO: Check wthout caring about the order:
+  const auto expected_candidates = std::vector<std::string>({"bandana", "banana"});
+
+  assert(candidates == expected_candidates);
+
+  return EXIT_SUCCESS;
+}
+

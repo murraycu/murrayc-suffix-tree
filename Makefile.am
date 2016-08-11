@@ -8,8 +8,7 @@ ACLOCAL_AMFLAGS  = -I macros ${ACLOCAL_FLAGS}
 # of tools that change files not installed by the package itself
 DISTCHECK_CONFIGURE_FLAGS = --enable-warnings=fatal --disable-update-mime-database
 
-#SUBDIRS =
-
+AM_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir) 
 
 COMMON_CXXFLAGS = $(PROJECT_CFLAGS) \
   $(PROJECT_WXXFLAGS) \
@@ -21,32 +20,34 @@ COMMON_LIBS = $(PROJECT_LIBS) \
 # TODO: Why do we still need to specify this for each executable that we build?
 AM_CXXFLAGS = $(COMMON_CXXFLAGS)
 
-bin_PROGRAMS = \
-  trie \
-  radix_tree \
-  suffix_tree
+check_PROGRAMS = \
+  tests/test_trie \
+  tests/test_radix_tree \
+  tests/test_suffix_tree
+
+TESTS = $(check_PROGRAMS)
 
 #List of source files needed to build the executable:
-trie_SOURCES = \
-	src/trees/trie/trie.cc
-trie_CXXFLAGS = \
+tests_test_trie_SOURCES = \
+	murrayc-suffix-tree/trie.h \
+	tests/test_trie.cc
+tests_test_trie_CXXFLAGS = \
 	$(COMMON_CXXFLAGS)
-trie_LDADD = \
+tests_test_trie_LDADD = \
 	$(COMMON_LIBS)
 
-radix_tree_SOURCES = \
-	src/trees/radix_tree/radix_tree.h \
-	src/trees/radix_tree/main.cc
-radix_tree_CXXFLAGS = \
+tests_test_radix_tree_SOURCES = \
+	murrayc-suffix-tree/radix_tree.h \
+	tests/test_radix_tree.cc
+tests_test_radix_tree_CXXFLAGS = \
 	$(COMMON_CXXFLAGS)
-radix_tree_LDADD = \
+tests_test_radix_tree_LDADD = \
 	$(COMMON_LIBS)
 
-suffix_tree_SOURCES = \
-	src/trees/radix_tree/radix_tree.h \
-	src/trees/suffix_tree/suffix_tree.h \
-	src/trees/suffix_tree/main.cc
-suffix_tree_CXXFLAGS = \
+tests_test_suffix_tree_SOURCES = \
+	murrayc-suffix-tree/suffix_tree.h \
+	tests/test_suffix_tree.cc
+tests_test_suffix_tree_CXXFLAGS = \
 	$(COMMON_CXXFLAGS)
-suffix_tree_LDADD = \
+tests_test_suffix_tree_LDADD = \
 	$(COMMON_LIBS)

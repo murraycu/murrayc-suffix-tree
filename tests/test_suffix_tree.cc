@@ -3,14 +3,14 @@
 #include <fstream>
 #include <cassert>
 
-#include "suffix_tree.h"
+#include <murrayc-suffix-tree/suffix_tree.h>
 
 #include <boost/timer/timer.hpp>
 
 static
 void test_full_text_index() {
   std::ifstream in;
-  in.open("src/trees/suffix_tree/test_pg1400.txt");
+  in.open("tests/test_pg1400.txt");
   assert(in.is_open());
 
   // The actual strings are stored outside of the SuffixTree,

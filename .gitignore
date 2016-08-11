@@ -50,6 +50,6 @@ Makefile.in
 /test-driver
 /test-suite.log
 
-/trie
-/radix_tree
-/suffix_tree
+/tests/test_trie
+/tests/test_radix_tree
+/tests/test_suffix_tree
