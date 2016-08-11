@@ -1,5 +1,5 @@
-#ifndef MURRAYC_TREE_NODE_H
-#define MURRAYC_TREE_NODE_H
+#ifndef MURRAYC_SUFFIX_TREE_NODE_H
+#define MURRAYC_SUFFIX_TREE_NODE_H
 
 #include <stack>
 
@@ -90,4 +90,4 @@ is_right_child(Node* node) {
     (node->parent_->right_ == node);
 }
 
-#endif //MURRAYC_TREE_NODE_H
+#endif //MURRAYC_SUFFIX_TREE_NODE_H

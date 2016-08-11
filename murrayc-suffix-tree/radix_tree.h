@@ -1,5 +1,5 @@
-#ifndef MURRAYC_RADIX_TREE_H
-#define MURRAYC_RADIX_TREE_H
+#ifndef MURRAYC_SUFFIX_TREE_RADIX_TREE_H
+#define MURRAYC_SUFFIX_TREE_RADIX_TREE_H
 
 #include <vector>
 #include <stack>
@@ -405,4 +405,4 @@ private:
   Node root;
 };
 
-#endif // MURRAYC_RADIX_TREE_H
+#endif // MURRAYC_SUFFIX_TREE_RADIX_TREE_H
