@@ -8,6 +8,9 @@ ACLOCAL_AMFLAGS  = -I macros ${ACLOCAL_FLAGS}
 # of tools that change files not installed by the package itself
 DISTCHECK_CONFIGURE_FLAGS = --enable-warnings=fatal --disable-update-mime-database
 
+pkgconfigdir = $(libdir)/pkgconfig
+nodist_pkgconfig_DATA = $(MURRAYC_SUFFIX_TREE_MODULE_NAME).pc
+
 AM_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir) 
 
 COMMON_CXXFLAGS = $(PROJECT_CFLAGS) \

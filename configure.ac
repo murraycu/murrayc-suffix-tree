@@ -27,7 +27,10 @@ AX_BOOST_TIMER
 
 # Allow use of mm-common macros for the warnings option.
 MM_PREREQ([0.9.5])
-#MM_INIT_MODULE([test-0-1])
+MM_INIT_MODULE([murrayc-suffix-tree-0-1])
+
+# http://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html
+AC_SUBST([LIBMURRAYC_SUFFIX_TREE_SO_VERSION], [0:0:0])
 
 AC_LANG([C++])
 MM_ARG_ENABLE_WARNINGS([PROJECT_WXXFLAGS],
@@ -36,6 +39,7 @@ MM_ARG_ENABLE_WARNINGS([PROJECT_WXXFLAGS],
                        [])
 
 
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile
+                 ${MURRAYC_SUFFIX_TREE_MODULE_NAME}.pc:murrayc-suffix-tree.pc.in])
 
 AC_OUTPUT

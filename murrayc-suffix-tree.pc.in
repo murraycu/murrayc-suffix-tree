@@ -1,0 +1,13 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+datarootdir=@datarootdir@
+datadir=@datadir@
+includedir=@includedir@
+
+Name: murrayc-suffix-tree
+Description: A generic templated suffix tree implementation.
+Version: @PACKAGE_VERSION@
+URL: https://github.com/murraycu/murrayc-suffix-tree
+Libs: -L${libdir} -lmurrayc-suffix-tree-@MURRAYC_SUFFIX_TREE_API_VERSION@
+Cflags: -I${includedir}/murrayc-suffix-tree-@MURRAYC_SUFFIX_TREE_API_VERSION@ -I${libdir}/murrayc-suffix-tree-@MURRAYC_SUFFIX_TREE_API_VERSION@/include
