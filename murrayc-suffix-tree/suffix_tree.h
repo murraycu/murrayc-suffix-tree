@@ -320,7 +320,7 @@ private:
     node->append_node(suffix, value);
   }
 
-  const typename Node::Edge* find_edge(const T_Key& key_str) const {
+  typename Node::Edge* find_edge(const T_Key& key_str) {
     //std::cout << "find_node(): key=" << key << std::endl;
     if (key_str.empty()) {
       return nullptr;
@@ -332,23 +332,23 @@ private:
     return find_edge(key);
   }
 
-  const typename Node::Edge* find_edge(const T_Key_Internal& key) const {
+  typename Node::Edge* find_edge(const T_Key_Internal& key) {
     //std::cout << "find_node(): key=" << key << std::endl;
     if (str_empty(key)) {
       return nullptr;
     }
 
-    const typename Node::Edge* edge = nullptr;
+    typename Node::Edge* edge = nullptr;
     std::size_t key_pos = 0;
     const auto key_size = str_size(key);
     while (key_pos < key_size) {
       //std::cout << "find_node(): remaining key=" << str_substr(key, key_pos) << std::endl;
       //std::cout << "  children_ size: " << node->children_.size() << std::endl;
       //Choose the child node, if any:
-      const typename Node::Edge* edge_next = nullptr;
+      typename Node::Edge* edge_next = nullptr;
 
-      const Node* node = edge ? edge->dest_ : &root_;
-      for (const auto& child_edge : node->children_) {
+      Node* node = edge ? edge->dest_ : &root_;
+      for (auto& child_edge : node->children_) {
         const auto& part = child_edge.part_;
         const auto part_size = str_size(part);
         //std::cout << "  key=" << key << ", key_pos=" << key_pos << ", part=" << part << "\n";
@@ -375,11 +375,11 @@ private:
     }
 
     //std::cout << "node: " << node << std::endl;
-    const auto node = edge->dest_;
+    auto node = edge->dest_;
     return node->has_value() ? edge : nullptr;
   }
 
-  const Node* find_node(const T_Key& key) const {
+  Node* find_node(const T_Key& key) {
     const auto edge = find_edge(key);
     if (!edge) {
       return nullptr;
