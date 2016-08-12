@@ -5,6 +5,7 @@
 #include <vector>
 #include <set>
 #include <stack>
+#include <tuple>
 
 /**
  * @tparam T_Key For instance, std::string, or something other container.
@@ -187,11 +188,19 @@ private:
     if (str_empty(substr)) {
       return result;
     }
+
+    const auto start = find_partial_edge(substr);
+    const auto start_edge = std::get<0>(start);
+    if (!start_edge) {
+      return result;
+    }
+
     const auto substr_len = str_size(substr);
 
     using Item = std::pair<std::size_t /* substr_pos */, const Node*>;
     std::stack<Item> stack;
-    stack.emplace(0, &root_);
+    const auto start_substr_used = std::get<2>(start);
+    stack.emplace(start_substr_used, start_edge->dest_);
 
     while (!stack.empty()) {
       const auto item = stack.top();
@@ -200,14 +209,10 @@ private:
       const auto substr_pos = item.first;
       const auto node = item.second;
 
-      //If we have already used all of the substring,
-      //then use all subsequent leaf nodes.
-      if (substr_pos >= substr_len) {
-        if (node->has_value()) {
-          result.insert(std::cbegin(node->values_), std::cend(node->values_));
+      if (node->has_value()) {
+        result.insert(std::cbegin(node->values_), std::cend(node->values_));
 
-          //And continue to examine children, because they can have values too.
-        }
+        //And continue to examine children, because they can have values too.
       }
 
       for (auto edge : node->children_) {
@@ -318,6 +323,79 @@ private:
     //std::cout << "Adding suffix: " << suffix << ", with value: " << value << '\n';
 
     node->append_node(suffix, value);
+  }
+
+  /**
+   * The Edge and the end of matching prefix of the edge's part.
+   */
+  using EdgeAndPartialKey = std::tuple<const typename Node::Edge*,
+        std::size_t /* edge_part_used */,
+        std::size_t /* substr_used */>;
+
+  /** Returns the edge and how much of the edge's part represents the @a substr.
+   */
+  EdgeAndPartialKey find_partial_edge(const T_Key_Internal& substr) const {
+    EdgeAndPartialKey result;
+
+    if (str_empty(substr)) {
+      return result;
+    }
+
+    const auto substr_len = str_size(substr);
+
+    const Node* node = &root_;
+    std::size_t substr_pos = 0;
+    const typename Node::Edge* parent_edge = nullptr;
+    std::size_t parent_edge_len_used = 0;
+    while (node) {
+      bool edge_found = false;
+      for (auto& edge : node->children_) {
+        const auto& edge_part = edge.part_;
+
+        const auto len = common_prefix(substr, substr_pos, edge_part, 0);
+        if (len == 0) {
+          continue;
+        }
+
+        const auto substr_remaining_len = substr_len - substr_pos;
+        //std::cout << "      substr_remaining_len=" << substr_remaining_len << std::endl;
+        if (len == str_size(edge_part)) {
+          // The remaining substr has edge_part as a prefix.
+          if (len == substr_remaining_len) {
+            // And that uses up all of our substr:
+            return std::make_tuple(&edge, len, substr_len);
+          } else {
+            // Some of our substr is still unused.
+            //std::cout << "        following partial edge." << std::endl;
+            // Follow the edge to try to use the rest of the substr:
+            node = edge.dest_;
+            substr_pos += str_size(edge_part);
+            edge_found = true;
+
+            // Remember how we got to the followed edge,
+            // so we can return that as a partial path if necessary. 
+            parent_edge = &edge;
+            parent_edge_len_used = len;
+            break;
+          }
+        } else if (len == substr_remaining_len) {
+          // The edge has the remaining substr as its prefix.
+          return std::make_tuple(&edge, len, substr_len);
+        } else {
+          // The edge has some of the remaining substr as its prefix.
+          return std::make_tuple(&edge, len, substr_pos + len);
+        }
+      }
+
+      if (!edge_found) {
+        break;
+      }
+    }
+
+    //std::cout << "  returning parent_edge=" << static_cast<void*>(parent_edge) <<
+      //"parent_edge_len_used=" << parent_edge_len_used <<
+      //"substr_pos=" << substr_pos << std::endl;
+    return std::make_tuple(parent_edge, parent_edge_len_used, substr_pos);
   }
 
   typename Node::Edge* find_edge(const T_Key& key_str) {
