@@ -8,6 +8,30 @@
 #include <boost/timer/timer.hpp>
 
 static
+void test_simple() {
+  using Tree = SuffixTree<std::string, std::size_t>;
+  Tree suffix_tree;
+
+  suffix_tree.insert("banana", 0);
+  suffix_tree.insert("bandana", 1);
+  suffix_tree.insert("bar", 2);
+  suffix_tree.insert("foobar", 3);
+
+  auto results = suffix_tree.find_candidate_values("an");
+  std::cout << "results.size(): " << results.size() << std::endl;
+  assert(results.size() == 2);
+  assert(results == Tree::Candidates({0, 1}));
+  for (const auto& result : results) {
+    std::cout << result << ": " << std::endl;
+  }
+
+  results = suffix_tree.find_candidate_values("bar");
+  std::cout << "results.size(): " << results.size() << std::endl;
+  assert(results.size() == 2);
+  assert(results == Tree::Candidates({2, 3}));
+}
+
+static
 void test_full_text_index_individual_strings() {
   std::ifstream in;
   in.open("tests/test_pg1400.txt");
@@ -103,6 +127,7 @@ void test_full_text_index_one_string() {
 }
 
 int main() {
+  test_simple();
   test_full_text_index_individual_strings();
   test_full_text_index_one_string();
 
