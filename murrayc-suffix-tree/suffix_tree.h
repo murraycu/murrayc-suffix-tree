@@ -6,6 +6,21 @@
 #include <set>
 #include <stack>
 
+// This cannot be an inner class,
+// because we cannot _fully_ specialize a template that is an inner class.
+
+template <typename T>
+struct const_iter_trait {
+  using type = typename T::const_iterator;
+};
+
+//Specialization for std::string,
+//so we use const char* instead of (slightly) less efficient iterator:
+template <>
+struct const_iter_trait<std::string> {
+  using type = typename std::string::const_pointer;
+};
+
 /**
  * @tparam T_Key For instance, std::string, or something other container.
  * @tparam T_Value The value to associate with each inserted key.
@@ -16,14 +31,17 @@ public:
   SuffixTree() {
   }
 
+
+  using KeyIterator = typename const_iter_trait<T_Key>::type;
+
   void insert(const T_Key& key, const T_Value& value) {
-    const auto start = std::cbegin(key);
+    const auto start = std::cbegin(key); //Add and use our own cbegin() that has a specialization for const char*.
     const auto end = start + key.size();
     const auto substr = std::make_pair(start, end);
     insert(substr, value);
   }
 
-  void insert(const typename T_Key::const_iterator& start, const typename T_Key::const_iterator& end, const T_Value& value) {
+  void insert(const KeyIterator& start, const KeyIterator& end, const T_Value& value) {
     const auto substr = std::make_pair(start, end);
     insert(substr, value);
   }
@@ -85,7 +103,6 @@ public:
 private:
 
   /// Start and end (1 past last position) of a substring in text_;
-  using KeyIterator = typename T_Key::const_iterator;
   using T_Key_Internal = std::pair<KeyIterator, KeyIterator>;
 
   class Node {

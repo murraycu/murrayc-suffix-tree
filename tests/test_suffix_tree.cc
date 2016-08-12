@@ -72,8 +72,8 @@ void test_full_text_index_one_string() {
   // Parse the text to find the words,
   // and add them to the SuffixTree.
   // TODO: Make SuffixTree: Support a T_Key type of const char*.
-  const auto start = std::cbegin(str);
-  const auto end = std::cend(str);
+  const auto start = str.c_str();
+  const auto end = start + str.size();;
   auto pos = start;
   auto word_start = pos;
   std::size_t i = 0;
