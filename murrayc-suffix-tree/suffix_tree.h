@@ -263,39 +263,41 @@ private:
     //std::cout << "next: " << next << std::endl;
   }
 
-  const Node* find_node(const T_Key& key) const {
+  const typename Node::Edge* find_edge(const T_Key& key) const {
     //std::cout << "find_node(): key=" << key << std::endl;
     if (key.empty()) {
       return nullptr;
     }
 
-    auto node = &root_;
+    const typename Node::Edge* edge = nullptr;
     std::size_t key_pos = 0;
     const auto key_size = key.size();
     while (key_pos < key_size) {
       //std::cout << "find_node(): remaining key=" << str_substr(key, key_pos) << std::endl;
       //std::cout << "  children_ size: " << node->children_.size() << std::endl;
       //Choose the child node, if any:
-      Node* next = nullptr;
-      for (const auto& edge : node->children_) {
-        const auto& part = edge.part_;
+      const typename Node::Edge* edge_next = nullptr;
+
+      const Node* node = edge ? edge->dest_ : &root_;
+      for (const auto& child_edge : node->children_) {
+        const auto& part = child_edge.part_;
         const auto part_size = str_size(part);
         //std::cout << "  key=" << key << ", key_pos=" << key_pos << ", part=" << part << "\n";
         if(!has_prefix(key, key_pos, part)) {
           continue;
         }
 
-        next = edge.dest_;
+        edge_next = &child_edge;
         key_pos += part_size;
         //std::cout << "    next: " << next << std::endl;
         break;
       }
 
-      if (!next) {
+      if (!edge_next) {
         return nullptr;
       }
 
-      node = next;
+      edge = edge_next;
     }
 
     if (key_pos < key_size) {
@@ -304,7 +306,17 @@ private:
     }
 
     //std::cout << "node: " << node << std::endl;
-    return node->has_value() ? node : nullptr;
+    const auto node = edge->dest_;
+    return node->has_value() ? edge : nullptr;
+  }
+
+  const Node* find_node(const T_Key& key) const {
+    const auto edge = find_edge(key);
+    if (!edge) {
+      return nullptr;
+    }
+
+    return edge->dest_;
   }
 
   static
