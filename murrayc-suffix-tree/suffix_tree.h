@@ -201,6 +201,11 @@ private:
         } else if (prefix_len < part_len) {
           // If the key is a prefix of the edge's part:
 
+          // TODO:
+          // If this edge leads to the same value (It can lead to many values),
+          // then do nothing, because find_candidate_values() would already use this edge to find this value.
+          // I think this is an "implicit" value. murrayc.
+
           // Split it,
           // adding a new intermediate node in it original node's place, with the original node as a child.
           const auto prefix = str_substr(part, 0, prefix_len);
