@@ -83,6 +83,16 @@ private:
       Node* dest_ = nullptr;
     };
 
+    void append_node(const T_Key_Internal& part, const T_Value& value) {
+      const auto extra_node = new Node();
+      extra_node->values_.emplace_back(value);
+      children_.emplace_back(part, extra_node);
+    }
+
+    void append_node(const T_Key_Internal& part, Node* node) {
+      children_.emplace_back(part, node);
+    }
+
     inline bool has_value() const {
       return !values_.empty();
     }
@@ -223,7 +233,7 @@ private:
           const auto dest = edge.dest_;
 
           auto extra_node = new Node;
-          extra_node->children_.emplace_back(suffix_part, dest);
+          extra_node->append_node(suffix_part, dest);
 
           edge.part_ = prefix;
           edge.dest_ = extra_node;
@@ -262,11 +272,7 @@ private:
     const auto suffix = str_substr(key, key_pos);
     //std::cout << "Adding suffix: " << suffix << ", with value: " << value << '\n';
 
-    const auto next = new Node;
-    node->children_.emplace_back(suffix, next);
-
-    next->values_.emplace_back(value);
-    //std::cout << "next: " << next << std::endl;
+    node->append_node(suffix, value);
   }
 
   const typename Node::Edge* find_edge(const T_Key& key_str) const {
