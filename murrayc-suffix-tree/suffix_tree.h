@@ -40,44 +40,11 @@ public:
       return result;
     }
 
-    const auto substr_len = substr.size();
 
-    using Item = std::pair<std::size_t /* substr_pos */, const Node*>;
-    std::stack<Item> stack;
-    stack.emplace(0, &root_);
-
-    while (!stack.empty()) {
-      const auto item = stack.top();
-      stack.pop();
-
-      const auto substr_pos = item.first;
-      const auto node = item.second;
-
-      //If we have already used all of the substring,
-      //then use all subsequent leaf nodes.
-      if (substr_pos >= substr_len) {
-        if (node->has_value()) {
-          result.insert(std::cbegin(node->values_), std::cend(node->values_));
-
-          //And continue to examine children, because they can have values too.
-        }
-      }
-
-      for (auto edge : node->children_) {
-        const auto& edge_part = edge.part_;
-
-        if (has_prefix(substr, substr_pos, edge_part, 0)) {
-          // The whole part is a prefix of the remaining substring, so follow it:
-          stack.emplace(substr_pos + str_size(edge_part), edge.dest_);
-        } else if (has_prefix(edge_part, 0, substr, substr_pos)) {
-          // The whole remaining substr is a prefix of the part, so it is a candidate:
-          // We will then use the value because substr_pos==substr_len.
-          stack.emplace(substr_len, edge.dest_);
-        }
-      }
-    }
-
-    return result;
+    const auto start = std::cbegin(substr);
+    const auto end = start + substr.size();
+    const auto substr_key = std::make_pair(start, end);
+    return find_candidate_values(substr_key);
   }
 
 private:
@@ -143,19 +110,58 @@ private:
     }
   }
 
-  static
-  bool has_prefix(const T_Key& str, std::size_t str_start_pos, const T_Key_Internal& prefix, std::size_t prefix_start_pos = 0) {
-    const auto prefix_start = prefix.first + prefix_start_pos;
-    const auto prefix_end = prefix.second;
-    const auto iters = std::mismatch(std::cbegin(str) + str_start_pos, std::cend(str),
-        prefix_start, prefix_end);
-    return iters.second == prefix_end;
+  /** Finds the values for any key containing this substring.
+   */
+  std::set<T_Value> find_candidate_values(const T_Key_Internal& substr) const {
+    std::set<T_Value> result;
+
+    if (str_empty(substr)) {
+      return result;
+    }
+    const auto substr_len = str_size(substr);
+
+    using Item = std::pair<std::size_t /* substr_pos */, const Node*>;
+    std::stack<Item> stack;
+    stack.emplace(0, &root_);
+
+    while (!stack.empty()) {
+      const auto item = stack.top();
+      stack.pop();
+
+      const auto substr_pos = item.first;
+      const auto node = item.second;
+
+      //If we have already used all of the substring,
+      //then use all subsequent leaf nodes.
+      if (substr_pos >= substr_len) {
+        if (node->has_value()) {
+          result.insert(std::cbegin(node->values_), std::cend(node->values_));
+
+          //And continue to examine children, because they can have values too.
+        }
+      }
+
+      for (auto edge : node->children_) {
+        const auto& edge_part = edge.part_;
+
+        if (has_prefix(substr, substr_pos, edge_part, 0)) {
+          // The whole part is a prefix of the remaining substring, so follow it:
+          stack.emplace(substr_pos + str_size(edge_part), edge.dest_);
+        } else if (has_prefix(edge_part, 0, substr, substr_pos)) {
+          // The whole remaining substr is a prefix of the part, so it is a candidate:
+          // We will then use the value because substr_pos==substr_len.
+          stack.emplace(substr_len, edge.dest_);
+        }
+      }
+    }
+
+    return result;
   }
 
   static
-  bool has_prefix(const T_Key_Internal& str, std::size_t str_start_pos, const T_Key& prefix, std::size_t prefix_start_pos = 0) {
-    const auto prefix_start = std::cbegin(prefix) + prefix_start_pos;
-    const auto prefix_end = std::cend(prefix);
+  bool has_prefix(const T_Key_Internal& str, std::size_t str_start_pos, const T_Key_Internal& prefix, std::size_t prefix_start_pos = 0) {
+    const auto prefix_start = prefix.first + prefix_start_pos;
+    const auto prefix_end = prefix.second;
     const auto iters = std::mismatch(str.first + str_start_pos, str.second,
         prefix_start, prefix_end);
     return iters.second == prefix_end;
@@ -263,15 +269,27 @@ private:
     //std::cout << "next: " << next << std::endl;
   }
 
-  const typename Node::Edge* find_edge(const T_Key& key) const {
+  const typename Node::Edge* find_edge(const T_Key& key_str) const {
     //std::cout << "find_node(): key=" << key << std::endl;
-    if (key.empty()) {
+    if (key_str.empty()) {
+      return nullptr;
+    }
+
+    const auto start = std::cbegin(key_str);
+    const auto end = start + key_str.size();
+    const auto key = std::make_pair(start, end);
+    return find_edge(key);
+  }
+
+  const typename Node::Edge* find_edge(const T_Key_Internal& key) const {
+    //std::cout << "find_node(): key=" << key << std::endl;
+    if (str_empty(key)) {
       return nullptr;
     }
 
     const typename Node::Edge* edge = nullptr;
     std::size_t key_pos = 0;
-    const auto key_size = key.size();
+    const auto key_size = str_size(key);
     while (key_pos < key_size) {
       //std::cout << "find_node(): remaining key=" << str_substr(key, key_pos) << std::endl;
       //std::cout << "  children_ size: " << node->children_.size() << std::endl;
