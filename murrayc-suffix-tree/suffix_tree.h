@@ -28,11 +28,6 @@ public:
     insert(substr, value);
   }
 
-  bool exists(const T_Key& key) const {
-    const auto node = find_node(key);
-    return node != nullptr;
-  };
-
   /** Finds the values for any key containing this substring.
    */
   std::set<T_Value> find_candidate_values(const T_Key& substr) const {

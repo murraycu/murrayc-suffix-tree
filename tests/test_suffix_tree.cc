@@ -35,14 +35,13 @@ void test_full_text_index_individual_strings() {
   timer.stop();
   timer.report();
 
-  assert(suffix_tree.exists("Pip"));
-  assert(!suffix_tree.exists("Pi"));
-
   std::cout << "SuffixTree: Search:" << std::endl;
   timer.start();
   const auto results = suffix_tree.find_candidate_values("xio");
   timer.stop();
   timer.report();
+
+  assert(results.size() > 10); //TODO: Exact.
   for (const auto& result : results) {
     std::cout << result << ": " << strings[result] << std::endl;
   }
@@ -91,14 +90,13 @@ void test_full_text_index_one_string() {
   timer.stop();
   timer.report();
 
-  assert(suffix_tree.exists("Pip"));
-  assert(!suffix_tree.exists("Pi"));
-
   std::cout << "SuffixTree: Search:" << std::endl;
   timer.start();
   const auto results = suffix_tree.find_candidate_values("xio");
   timer.stop();
   timer.report();
+
+  assert(results.size() > 10); //TODO: Exact.
   for (const auto& result : results) {
     std::cout << result << std::endl;
   }
