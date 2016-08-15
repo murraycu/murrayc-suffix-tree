@@ -79,6 +79,24 @@ private:
       Edge(Edge&& src) = default;
       Edge& operator=(Edge&& src) = default;
 
+      /** This inserts an intermediate node by splitting the edge's part at
+       * position @pos.
+       * @result The new intermediate node.
+       */
+      Node* split(std::size_t part_pos) {
+        const auto prefix_part = str_substr(part_, 0, part_pos);
+        const auto suffix_part = str_substr(part_, part_pos);
+        const auto dest = dest_;
+
+        auto extra_node = new Node;
+        extra_node->append_node(suffix_part, dest);
+
+        part_ = prefix_part;
+        dest_ = extra_node;
+
+        return extra_node;
+      }
+
       T_Key_Internal part_;
       Node* dest_ = nullptr;
     };
@@ -222,21 +240,7 @@ private:
 
           // Split it,
           // adding a new intermediate node in it original node's place, with the original node as a child.
-          const auto prefix = str_substr(part, 0, prefix_len);
-          assert(str_size(prefix) == prefix_len);
-          //std::cout << "  splitting part=" << debug_key(part) << ", at key prefix: " << debug_key(str_substr(key, 0, key_pos + 1)) <<
-          //  ", with prefix=" << debug_key(prefix) << std::endl;
-          const auto suffix_part = str_substr(part, prefix_len);
-          //assert(part == (prefix + suffix_part));
-          //std::cout << "    suffix_part=" << suffix_part << std::endl;
-
-          const auto dest = edge.dest_;
-
-          auto extra_node = new Node;
-          extra_node->append_node(suffix_part, dest);
-
-          edge.part_ = prefix;
-          edge.dest_ = extra_node;
+          edge.split(prefix_len);
 
           // Try the same node again.
           // This time it might be a perfect match.
