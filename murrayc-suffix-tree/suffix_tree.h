@@ -28,10 +28,13 @@ public:
     insert(substr, value);
   }
 
+
+  using Candidates = std::set<T_Value>;
+
   /** Finds the values for any key containing this substring.
    */
-  std::set<T_Value> find_candidate_values(const T_Key& substr) const {
-    std::set<T_Value> result;
+  Candidates find_candidate_values(const T_Key& substr) const {
+    Candidates result;
 
     if (substr.empty()) {
       return result;
