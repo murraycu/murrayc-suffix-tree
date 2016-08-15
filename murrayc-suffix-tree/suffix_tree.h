@@ -7,7 +7,6 @@
 #include <vector>
 #include <set>
 #include <stack>
-#include <tuple>
 
 /**
  * @tparam T_Key For instance, std::string, or something other container.
@@ -386,12 +385,12 @@ private:
     }
 
     const auto start = find_partial_edge(substr);
-    const auto start_edge = std::get<0>(start);
+    const auto start_edge = start.edge_;
     if (!start_edge) {
       return result;
     }
 
-    const auto start_substr_used = std::get<2>(start);
+    const auto start_substr_used = start.substr_used_;
     if (start_substr_used != str_size(substr)) {
       return result;
     }
@@ -529,9 +528,24 @@ private:
   /**
    * The Edge and the end of matching prefix of the edge's part.
    */
-  using EdgeMatch = std::tuple<const typename Node::Edge*,
-        std::size_t /* edge_part_used */,
-        std::size_t /* substr_used */>;
+  class EdgeMatch {
+  public:
+    EdgeMatch() {
+    }
+
+    EdgeMatch(const typename Node::Edge* edge, std::size_t edge_part_used, std::size_t substr_used)
+    : edge_(edge), edge_part_used_(edge_part_used), substr_used_(substr_used) {
+    }
+
+    EdgeMatch(const EdgeMatch& src) = default;
+    EdgeMatch& operator=(const EdgeMatch& src) = default;
+    EdgeMatch(EdgeMatch&& src) = default;
+    EdgeMatch& operator=(EdgeMatch&& src) = default;
+
+    const typename Node::Edge* edge_ = nullptr;
+    std::size_t edge_part_used_ = 0;
+    std::size_t substr_used_ = 0;
+  };
 
   /** Returns the edge and how much of the edge's part represents the @a substr.
    */
@@ -564,7 +578,7 @@ private:
           // The remaining substr has edge_part as a prefix.
           if (len == substr_remaining_len) {
             // And that uses up all of our substr:
-            return std::make_tuple(&edge, len, substr_len);
+            return EdgeMatch(&edge, len, substr_len);
           } else {
             // Some of our substr is still unused.
             //std::cout << "        following partial edge." << std::endl;
@@ -581,10 +595,10 @@ private:
           }
         } else if (len == substr_remaining_len) {
           // The edge has the remaining substr as its prefix.
-          return std::make_tuple(&edge, len, substr_len);
+          return EdgeMatch(&edge, len, substr_len);
         } else {
           // The edge has some of the remaining substr as its prefix.
-          return std::make_tuple(&edge, len, substr_pos + len);
+          return EdgeMatch(&edge, len, substr_pos + len);
         }
       }
 
@@ -596,7 +610,7 @@ private:
     //std::cout << "  returning parent_edge=" << static_cast<void*>(parent_edge) <<
       //"parent_edge_len_used=" << parent_edge_len_used <<
       //"substr_pos=" << substr_pos << std::endl;
-    return std::make_tuple(parent_edge, parent_edge_len_used, substr_pos);
+    return EdgeMatch(parent_edge, parent_edge_len_used, substr_pos);
   }
 
   static
