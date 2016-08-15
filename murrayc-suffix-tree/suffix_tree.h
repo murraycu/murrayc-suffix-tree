@@ -25,6 +25,7 @@ public:
     }
 
     insert(substr, value);
+    assert(debug_exists(key));
   }
 
   void insert(const typename T_Key::const_iterator& start, const typename T_Key::const_iterator& end, const T_Value& value) {
@@ -34,6 +35,7 @@ public:
     }
 
     insert(substr, value);
+    assert(debug_exists(substr));
   }
 
 
@@ -56,10 +58,27 @@ public:
   }
 
 private:
-
   /// Start and end (1 past last position) of a substring in text_;
   using KeyIterator = typename T_Key::const_iterator;
   using T_Key_Internal = std::pair<KeyIterator, KeyIterator>;
+
+  bool debug_exists(const T_Key& key) const {
+    // TODO: Add const overloads of find_node(), find_edge(), etc,
+    // without duplicating code.
+    //auto unconst = const_cast<std::remove_const_t<decltype(this)>>(this);
+    auto unconst = const_cast<SuffixTree<T_Key, T_Value>*>(this);
+    const auto node = unconst->find_node(key);
+    return node != nullptr;
+  };
+
+  bool debug_exists(const T_Key_Internal& key) const {
+    // TODO: Add const overloads of find_node(), find_edge(), etc,
+    // without duplicating code.
+    //auto unconst = const_cast<std::remove_const_t<decltype(this)>>(this);
+    auto unconst = const_cast<SuffixTree<T_Key, T_Value>*>(this);
+    const auto node = unconst->find_node(key);
+    return node != nullptr;
+  };
 
   class Node {
   public:
@@ -80,6 +99,7 @@ private:
       Edge(const T_Key_Internal& part, Node* dest)
         : part_(part),
           dest_(dest) {
+        assert(str_size(part));
       }
 
       Edge(const Edge& src) = default;
@@ -87,13 +107,19 @@ private:
       Edge(Edge&& src) = default;
       Edge& operator=(Edge&& src) = default;
 
+      void append_node_to_dest(const T_Key_Internal& part, const T_Value& value) {
+        dest_->append_node(part, value);
+      }
+
       /** This inserts an intermediate node by splitting the edge's part at
        * position @pos.
        * @result The new intermediate node.
        */
       Node* split(std::size_t part_pos) {
         const auto prefix_part = str_substr(part_, 0, part_pos);
+        assert(str_size(prefix_part) > 0);
         const auto suffix_part = str_substr(part_, part_pos);
+        assert(str_size(suffix_part) > 0);
         const auto dest = dest_;
 
         auto extra_node = new Node;
@@ -129,6 +155,7 @@ private:
     std::vector<Edge> children_;
 
     // TODO: Wastes space on non-leaves.
+    // TODO: Use a set, though that would not allow duplicates.
     std::vector<T_Value> values_;
   };
 
@@ -347,6 +374,15 @@ private:
   }
 
   const Node* find_node(const T_Key& key) const {
+    const auto edge = find_edge(key);
+    if (!edge) {
+      return nullptr;
+    }
+
+    return edge->dest_;
+  }
+
+  Node* find_node(const T_Key_Internal& key) {
     const auto edge = find_edge(key);
     if (!edge) {
       return nullptr;
