@@ -20,11 +20,19 @@ public:
     const auto start = std::cbegin(key);
     const auto end = start + key.size();
     const auto substr = std::make_pair(start, end);
+    if (str_empty(substr)) {
+      return;
+    }
+
     insert(substr, value);
   }
 
   void insert(const typename T_Key::const_iterator& start, const typename T_Key::const_iterator& end, const T_Value& value) {
     const auto substr = std::make_pair(start, end);
+    if (str_empty(substr)) {
+      return;
+    }
+
     insert(substr, value);
   }
 
