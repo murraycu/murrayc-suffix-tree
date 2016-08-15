@@ -6,6 +6,7 @@
 #include <set>
 #include <stack>
 #include <tuple>
+#include <algorithm>
 
 /**
  * @tparam T_Key For instance, std::string, or something other container.
@@ -25,7 +26,7 @@ public:
       return;
     }
 
-    insert(substr, value);
+    insert_ukkonen(substr, value);
   }
 
   void insert(const typename T_Key::const_iterator& start, const typename T_Key::const_iterator& end, const T_Value& value) {
@@ -34,7 +35,7 @@ public:
       return;
     }
 
-    insert(substr, value);
+    insert_ukkonen(substr, value);
   }
 
   using Candidates = std::set<T_Value>;
@@ -117,6 +118,22 @@ private:
       Edge(Edge&& src) = default;
       Edge& operator=(Edge&& src) = default;
 
+      inline bool dest_has_children() {
+        if (!dest_) {
+          return false;
+        }
+
+        return !dest_->children_.empty();
+      }
+
+      inline bool dest_has_value() {
+        if (!dest_) {
+          return false;
+        }
+
+        return dest_->has_value();
+      }
+
       void append_node_to_dest(const KeyInternal& part, const T_Value& value) {
         dest_->append_node(part, value);
       }
@@ -141,6 +158,10 @@ private:
         return extra_node;
       }
 
+      void ensure_dest_has_value(const T_Value& value) {
+        dest_->ensure_has_value(value);
+      }
+
       KeyInternal part_;
       Node* dest_ = nullptr;
     };
@@ -151,8 +172,20 @@ private:
       children_.emplace_back(part, extra_node);
     }
 
+    void append_node(const KeyInternal& part) {
+      const auto extra_node = new Node();
+      children_.emplace_back(part, extra_node);
+    }
+
     void append_node(const KeyInternal& part, Node* node) {
       children_.emplace_back(part, node);
+    }
+
+    void ensure_has_value(const T_Value& value) {
+      const auto end = std::end(values_);
+      if (std::find(std::begin(values_), end, value) == end) {
+        values_.emplace_back(value);
+      }
     }
 
     inline bool has_value() const {
@@ -169,17 +202,115 @@ private:
     std::vector<T_Value> values_;
   };
 
-  void insert(const KeyInternal& key, const T_Value& value) {
-    //std::cout << "debug: insert(): key.start_=" << static_cast<const void*>(key.start_) << ", second=" << static_cast<const void*>(key.end_) << std::endl;
-    //Insert every suffix of the key:
-    KeyInternal suffix = key;
-    while(!str_empty(suffix)) {
-      //std::cout << "insert(): suffix=" << suffix << ", value=" << value <<std::endl;
-      insert_single(suffix, value);
+  void insert_ukkonen(const KeyInternal& key, const T_Value& value) {
+    //std::cout << "insert_ukkonen(): " << debug_key(key) << std::endl;
 
-      // Remove the first character:
-      suffix = str_substr(suffix, 1);
-      //std::cout << "suffix: first=" << static_cast<const void*>(suffix.start_) << ", second=" << static_cast<const void*>(suffix.end_) << std::endl;
+    // Use Ukkonen's algorithm for suffix tree construction:
+    // Unlike the usual implementation, this doesn't use a special $ character
+    // at the end of the input string and the finished paths. Otherwise we could
+    // never store strings containing "$". Instead, we just have a bool to tell
+    // us when our "extension" includes the last character,  and we let
+    // intermediate nodes have values, instead of requiring extra $ nodes.
+    // We check if the exiting edge has no children and and has a value.
+    const auto key_start = key.start_;
+    const auto key_end = key.end_;
+    const auto key_last = key_end - 1;
+
+    // The "phases"
+    for (auto i = key_start; i != key_end; ++i) {
+      //std::cout << "  i=" << *i << std::endl;
+      const bool is_last_char = (i == key_last);
+
+      // The "extensions".
+      const auto j_end = i + 1;
+      for (auto j = key_start; j != j_end; ++j) {
+        //std::cout << "    j=" << *j << std::endl;
+
+        const KeyInternal key_prefix(j, i + 1);
+        //std::cout << "    key_prefix: " << debug_key(key_prefix) << std::endl;
+        //std::cout << "      key_prefix len:" << str_size(key_prefix) << std::endl;
+
+        const auto edge_and_part_pos = find_partial_edge(key_prefix);
+        const auto edge = std::get<0>(edge_and_part_pos);
+        const auto part_len_used = std::get<1>(edge_and_part_pos);
+        const auto key_prefix_len_used = std::get<2>(edge_and_part_pos);
+
+
+        //std::cout << "     key_prefix_len_used=" << key_prefix_len_used << std::endl;
+        if (!edge) {
+          // Rule 2 extension: There is no path that is even a partial match:
+          //std::cout << "      Rule 2: Adding edge to root." << std::endl;
+          if (is_last_char) {
+            //Only add the actual value when we are adding the last character,
+            //so we don't mistakenly identify a path in progress as a real finished path
+            //from a previously-inserted string.
+            root_.append_node(key_prefix, value);
+          } else {
+            root_.append_node(key_prefix);
+          }
+
+          continue;
+        }
+ 
+        const bool whole_part_used = (part_len_used == str_size(edge->part_));
+        const bool path_is_unfinished = !edge->dest_has_children() && !edge->dest_has_value();
+        if (whole_part_used && path_is_unfinished) {
+          // Rule 1 extension: There is a path that is a partial match:
+          //std::cout << "      Rule 1: Appending to edge's substring." << std::endl;
+          // Extend the edge's path by adding the extra character:
+          // Note: If the suffix tree was storing only one string,
+          // we could avoid the need for this by just using a special "end" value on
+          // all these (to be) leaves, that wouldn't need to be updated.
+          edge->part_ = key_prefix;
+          //std::cout << "        new part: " << debug_key(edge->part_) << std::endl;
+
+          if (is_last_char) {
+            // Make sure that this path contains our value.
+            // We didn't add it before so we would know it was unfinished.
+            edge->ensure_dest_has_value(value);
+          }
+
+          continue;
+        }
+
+        // Rule 3 extension:
+        if (is_last_char) {
+          //std::cout << "      Rule 3: Inserting internal node." << std::endl;
+          //std::cout << "        edge to split: " << debug_key(edge->part_) << ", part_len_used=" << part_len_used << std::endl;
+          //std::cout << "        key_prefix: " << debug_key(key_prefix) << ", key_prefix_len_used=" << key_prefix_len_used << std::endl;
+          const auto key_prefix_len = str_size(key_prefix);
+          if (whole_part_used) {
+            // We are at the end of a real path:
+            if (key_prefix_len_used == key_prefix_len) {
+              // This is the exact path that we need,
+              // so just make sure our value is set in the leaf.
+              //std::cout << "          Using path as is." << std::endl;
+              edge->dest_->ensure_has_value(value);
+            } else {
+              // We reached the end of a real path (with a value),
+              // but it isn't our complete prefix,
+              // so we just add a child node:
+              const auto suffix = str_substr(key_prefix, key_prefix_len_used);
+              assert(str_size(suffix) > 0);
+              edge->dest_->append_node(suffix, value);
+            }
+          } else {
+            // We are in the middle of a path, so we split it:
+            auto extra_node = edge->split(part_len_used);
+            if (key_prefix_len_used < key_prefix_len) {
+              const auto suffix = str_substr(key_prefix, key_prefix_len_used);
+              //std::cout << "         Split and Appending: " << debug_key(suffix) << std::endl;
+              assert(str_size(suffix) > 0);
+              extra_node->append_node(suffix, value);
+            } else {
+              //std::cout << "         Split and setting value." << std::endl;
+              extra_node->ensure_has_value(value);
+            }
+          }
+        } else {
+          //std::cout << "      Rule 3: Do nothing." << std::endl;
+        }
+      }
     }
   }
 
@@ -192,7 +323,8 @@ private:
       return result;
     }
 
-    const auto start = find_partial_edge(substr);
+    auto unconst = const_cast<SuffixTree<T_Key, T_Value>*>(this);
+    const auto start = unconst->find_partial_edge(substr);
     const auto start_edge = std::get<0>(start);
     if (!start_edge) {
       return result;
@@ -255,7 +387,6 @@ private:
         prefix.start_ + prefix_start_pos, prefix.end_);
     return std::distance(str_start, iters.first);
   }
-
 
   void insert_single(const KeyInternal& key, const T_Value& value) {
     //std::cout << "insert(): key=" << debug_key(key) << std::endl;
@@ -335,13 +466,14 @@ private:
   /**
    * The Edge and the end of matching prefix of the edge's part.
    */
-  using EdgeMatch = std::tuple<const typename Node::Edge*,
+  using EdgeMatch = std::tuple<typename Node::Edge*,
         std::size_t /* edge_part_used */,
         std::size_t /* substr_used */>;
 
   /** Returns the edge and how much of the edge's part represents the @a substr.
    */
-  EdgeMatch find_partial_edge(const KeyInternal& substr) const {
+  EdgeMatch find_partial_edge(const KeyInternal& substr) {
+    //std::cout << "find_partial_edge(): substr=" << debug_key(substr) << std::endl;
     EdgeMatch result;
 
     if (str_empty(substr)) {
@@ -349,17 +481,21 @@ private:
     }
 
     const auto substr_len = str_size(substr);
+    //std::cout << "substr_len=" << substr_len << std::endl;
 
-    const Node* node = &root_;
+    Node* node = &root_;
     std::size_t substr_pos = 0;
-    const typename Node::Edge* parent_edge = nullptr;
+    typename Node::Edge* parent_edge = nullptr;
     std::size_t parent_edge_len_used = 0;
     while (node) {
+      //std::cout << "  node:" << std::endl;
       bool edge_found = false;
       for (auto& edge : node->children_) {
         const auto& edge_part = edge.part_;
+        //std::cout << "    edge: part=" << debug_key(edge_part) << std::endl;
 
         const auto len = common_prefix(substr, substr_pos, edge_part, 0);
+        //std::cout << "      common_prefix_len=" << len << std::endl;
         if (len == 0) {
           continue;
         }
