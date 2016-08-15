@@ -57,6 +57,12 @@ public:
     return find_candidate_values(substr_key);
   }
 
+  void debug_print() const {
+    std::cout << "Tree:" << std::endl;
+    debug_print(&root_, 0);
+    std::cout << std::endl << std::endl;
+  }
+
 private:
   /// Start and end (1 past last position) of a substring in text_;
   using KeyIterator = typename T_Key::const_iterator;
@@ -422,32 +428,31 @@ private:
       (end_used < key.second) ? end_used : key.second);
   }
 
-  /*
   static std::string debug_key(const T_Key_Internal& key) {
-    if (key.first == nullptr) {
-      return std::string();
-    }
-
     if (key.second <= key.first) {
       return std::string();
     }
 
-    const auto len = std::distance(key.first, key.second);
-    return debug_key(key.first, len);
+    return std::string(key.first, key.second);
   }
 
-  static std::string debug_key(const char* first, std::size_t len) {
-    if (first == nullptr) {
-      return std::string();
+  static void debug_print_indent(std::size_t indent) {
+    for (std::size_t i = 0; i < indent; ++i) {
+      std::cout << ' ';
     }
-
-    if (len == 0) {
-      return std::string();
-    }
-
-    return std::string(first, len);
   }
-  */
+
+  static void debug_print(const Node* node, std::size_t indent) {
+    if (!node) {
+      return;
+    }
+
+    for (const auto& edge : node->children_) {
+      debug_print_indent(indent);
+      std::cout << debug_key(edge.part_) << std::endl;
+      debug_print(edge.dest_, indent + str_size(edge.part_));
+    }
+  }
 
   Node root_;
 };
