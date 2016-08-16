@@ -13,6 +13,7 @@ void test_simple_single() {
   Tree suffix_tree;
 
   suffix_tree.insert("xyzxyaxyz", 0);
+  suffix_tree.debug_print();
 
   {
     auto results = suffix_tree.find("bob");
