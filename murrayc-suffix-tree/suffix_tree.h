@@ -20,7 +20,7 @@ public:
   void insert(const T_Key& key, const T_Value& value) {
     const auto start = std::cbegin(key);
     const auto end = start + key.size();
-    const auto substr = std::make_pair(start, end);
+    const KeyInternal substr(start, end);
     if (str_empty(substr)) {
       return;
     }
@@ -30,7 +30,7 @@ public:
   }
 
   void insert(const typename T_Key::const_iterator& start, const typename T_Key::const_iterator& end, const T_Value& value) {
-    const auto substr = std::make_pair(start, end);
+    const KeyInternal substr(start, end);
     if (str_empty(substr)) {
       return;
     }
@@ -54,7 +54,7 @@ public:
 
     const auto start = std::cbegin(substr);
     const auto end = start + substr.size();
-    const auto substr_key = std::make_pair(start, end);
+    const KeyInternal substr_key(start, end);
     return find_candidate_values(substr_key);
   }
 
@@ -67,7 +67,23 @@ public:
 private:
   /// Start and end (1 past last position) of a substring in text_;
   using KeyIterator = typename T_Key::const_iterator;
-  using KeyInternal = std::pair<KeyIterator, KeyIterator>;
+
+  class KeyInternal {
+  public:
+    KeyInternal() = default;
+
+    KeyInternal(const KeyIterator& start, const KeyIterator& end)
+    : start_(start), end_(end) {
+      }
+
+    KeyInternal(const KeyInternal& src) = default;
+    KeyInternal& operator=(const KeyInternal& src) = default;
+    KeyInternal(KeyInternal&& src) = default;
+    KeyInternal& operator=(KeyInternal&& src) = default;
+
+    KeyIterator start_;
+    KeyIterator end_;
+  };
 
   bool debug_exists(const T_Key& key) const {
     // TODO: Add const overloads of find_node(), find_edge(), etc,
@@ -96,7 +112,7 @@ private:
     Node& operator=(Node&& src) = default;
 
     ~Node() {
-      for(auto edge : children_) {
+      for(auto& edge : children_) {
         delete edge.dest_;
       }
     }
@@ -167,7 +183,7 @@ private:
   };
 
   void insert(const KeyInternal& key, const T_Value& value) {
-    //std::cout << "debug: insert(): key.first=" << static_cast<const void*>(key.first) << ", second=" << static_cast<const void*>(key.second) << std::endl;
+    //std::cout << "debug: insert(): key.start_=" << static_cast<const void*>(key.start_) << ", second=" << static_cast<const void*>(key.end_) << std::endl;
     //Insert every suffix of the key:
     KeyInternal suffix = key;
     while(!str_empty(suffix)) {
@@ -176,7 +192,7 @@ private:
 
       // Remove the first character:
       suffix = str_substr(suffix, 1);
-      //std::cout << "suffix: first=" << static_cast<const void*>(suffix.first) << ", second=" << static_cast<const void*>(suffix.second) << std::endl;
+      //std::cout << "suffix: first=" << static_cast<const void*>(suffix.start_) << ", second=" << static_cast<const void*>(suffix.end_) << std::endl;
     }
   }
 
@@ -234,18 +250,18 @@ private:
 
   static
   bool has_prefix(const KeyInternal& str, std::size_t str_start_pos, const KeyInternal& prefix, std::size_t prefix_start_pos = 0) {
-    const auto prefix_start = prefix.first + prefix_start_pos;
-    const auto prefix_end = prefix.second;
-    const auto iters = std::mismatch(str.first + str_start_pos, str.second,
+    const auto prefix_start = prefix.start_ + prefix_start_pos;
+    const auto prefix_end = prefix.end_;
+    const auto iters = std::mismatch(str.start_ + str_start_pos, str.end_,
         prefix_start, prefix_end);
     return iters.second == prefix_end;
   }
 
   static
   std::size_t common_prefix(const KeyInternal& str, std::size_t str_start_pos, const KeyInternal& prefix, std::size_t prefix_start_pos) {
-    const auto str_start = str.first + str_start_pos;
-    const auto iters = std::mismatch(str_start, str.second,
-        prefix.first + prefix_start_pos, prefix.second);
+    const auto str_start = str.start_ + str_start_pos;
+    const auto iters = std::mismatch(str_start, str.end_,
+        prefix.start_ + prefix_start_pos, prefix.end_);
     return std::distance(str_start, iters.first);
   }
 
@@ -406,7 +422,7 @@ private:
 
     const auto start = std::cbegin(key_str);
     const auto end = start + key_str.size();
-    const auto key = std::make_pair(start, end);
+    const KeyInternal key(start, end);
     return find_edge(key);
   }
 
@@ -477,41 +493,41 @@ private:
 
   static
   inline std::size_t str_size(const KeyInternal& key) {
-    if (key.second <= key.first) {
+    if (key.end_ <= key.start_) {
       return 0;
     }
 
-    return key.second - key.first;
+    return key.end_ - key.start_;
   }
 
   static
   inline bool str_empty(const KeyInternal& key) {
-    return key.first >= key.second;
+    return key.start_ >= key.end_;
   }
 
   static
   inline KeyInternal str_substr(const KeyInternal& key, std::size_t start) {
-    const auto start_used = key.first + start;
-    return std::make_pair(
-      (start_used < key.second) ? start_used : key.second,
-      key.second);
+    const auto start_used = key.start_ + start;
+    return KeyInternal(
+      (start_used < key.end_) ? start_used : key.end_,
+      key.end_);
   }
 
   static
   inline KeyInternal str_substr(const KeyInternal& key, std::size_t start, std::size_t len) {
-    const auto start_used = key.first + start;
-    const auto end_used = key.first + len;
-    return std::make_pair(
-      (start_used < key.second) ? start_used : key.second,
-      (end_used < key.second) ? end_used : key.second);
+    const auto start_used = key.start_ + start;
+    const auto end_used = key.start_ + len;
+    return KeyInternal(
+      (start_used < key.end_) ? start_used : key.end_,
+      (end_used < key.end_) ? end_used : key.end_);
   }
 
   static std::string debug_key(const KeyInternal& key) {
-    if (key.second <= key.first) {
+    if (key.end_ <= key.start_) {
       return std::string();
     }
 
-    return std::string(key.first, key.second);
+    return std::string(key.start_, key.end_);
   }
 
   static void debug_print_indent(std::size_t indent) {
