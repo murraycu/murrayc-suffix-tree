@@ -67,7 +67,7 @@ public:
 private:
   /// Start and end (1 past last position) of a substring in text_;
   using KeyIterator = typename T_Key::const_iterator;
-  using T_Key_Internal = std::pair<KeyIterator, KeyIterator>;
+  using KeyInternal = std::pair<KeyIterator, KeyIterator>;
 
   bool debug_exists(const T_Key& key) const {
     // TODO: Add const overloads of find_node(), find_edge(), etc,
@@ -78,7 +78,7 @@ private:
     return node != nullptr;
   };
 
-  bool debug_exists(const T_Key_Internal& key) const {
+  bool debug_exists(const KeyInternal& key) const {
     // TODO: Add const overloads of find_node(), find_edge(), etc,
     // without duplicating code.
     //auto unconst = const_cast<std::remove_const_t<decltype(this)>>(this);
@@ -103,7 +103,7 @@ private:
 
     class Edge {
     public:
-      Edge(const T_Key_Internal& part, Node* dest)
+      Edge(const KeyInternal& part, Node* dest)
         : part_(part),
           dest_(dest) {
         assert(str_size(part));
@@ -114,7 +114,7 @@ private:
       Edge(Edge&& src) = default;
       Edge& operator=(Edge&& src) = default;
 
-      void append_node_to_dest(const T_Key_Internal& part, const T_Value& value) {
+      void append_node_to_dest(const KeyInternal& part, const T_Value& value) {
         dest_->append_node(part, value);
       }
 
@@ -138,17 +138,17 @@ private:
         return extra_node;
       }
 
-      T_Key_Internal part_;
+      KeyInternal part_;
       Node* dest_ = nullptr;
     };
 
-    void append_node(const T_Key_Internal& part, const T_Value& value) {
+    void append_node(const KeyInternal& part, const T_Value& value) {
       const auto extra_node = new Node();
       extra_node->values_.emplace_back(value);
       children_.emplace_back(part, extra_node);
     }
 
-    void append_node(const T_Key_Internal& part, Node* node) {
+    void append_node(const KeyInternal& part, Node* node) {
       children_.emplace_back(part, node);
     }
 
@@ -166,10 +166,10 @@ private:
     std::vector<T_Value> values_;
   };
 
-  void insert(const T_Key_Internal& key, const T_Value& value) {
+  void insert(const KeyInternal& key, const T_Value& value) {
     //std::cout << "debug: insert(): key.first=" << static_cast<const void*>(key.first) << ", second=" << static_cast<const void*>(key.second) << std::endl;
     //Insert every suffix of the key:
-    T_Key_Internal suffix = key;
+    KeyInternal suffix = key;
     while(!str_empty(suffix)) {
       //std::cout << "insert(): suffix=" << suffix << ", value=" << value <<std::endl;
       insert_single(suffix, value);
@@ -182,7 +182,7 @@ private:
 
   /** Finds the values for any key containing this substring.
    */
-  std::set<T_Value> find_candidate_values(const T_Key_Internal& substr) const {
+  std::set<T_Value> find_candidate_values(const KeyInternal& substr) const {
     std::set<T_Value> result;
 
     if (str_empty(substr)) {
@@ -233,7 +233,7 @@ private:
   }
 
   static
-  bool has_prefix(const T_Key_Internal& str, std::size_t str_start_pos, const T_Key_Internal& prefix, std::size_t prefix_start_pos = 0) {
+  bool has_prefix(const KeyInternal& str, std::size_t str_start_pos, const KeyInternal& prefix, std::size_t prefix_start_pos = 0) {
     const auto prefix_start = prefix.first + prefix_start_pos;
     const auto prefix_end = prefix.second;
     const auto iters = std::mismatch(str.first + str_start_pos, str.second,
@@ -242,7 +242,7 @@ private:
   }
 
   static
-  std::size_t common_prefix(const T_Key_Internal& str, std::size_t str_start_pos, const T_Key_Internal& prefix, std::size_t prefix_start_pos) {
+  std::size_t common_prefix(const KeyInternal& str, std::size_t str_start_pos, const KeyInternal& prefix, std::size_t prefix_start_pos) {
     const auto str_start = str.first + str_start_pos;
     const auto iters = std::mismatch(str_start, str.second,
         prefix.first + prefix_start_pos, prefix.second);
@@ -250,7 +250,7 @@ private:
   }
 
 
-  void insert_single(const T_Key_Internal& key, const T_Value& value) {
+  void insert_single(const KeyInternal& key, const T_Value& value) {
     //std::cout << "insert(): key=" << debug_key(key) << std::endl;
     if (str_empty(key)) {
       return;
@@ -334,7 +334,7 @@ private:
 
   /** Returns the edge and how much of the edge's part represents the @a substr.
    */
-  EdgeAndPartialKey find_partial_edge(const T_Key_Internal& substr) const {
+  EdgeAndPartialKey find_partial_edge(const KeyInternal& substr) const {
     EdgeAndPartialKey result;
 
     if (str_empty(substr)) {
@@ -410,7 +410,7 @@ private:
     return find_edge(key);
   }
 
-  typename Node::Edge* find_edge(const T_Key_Internal& key) {
+  typename Node::Edge* find_edge(const KeyInternal& key) {
     //std::cout << "find_node(): key=" << key << std::endl;
     if (str_empty(key)) {
       return nullptr;
@@ -466,7 +466,7 @@ private:
     return edge->dest_;
   }
 
-  Node* find_node(const T_Key_Internal& key) {
+  Node* find_node(const KeyInternal& key) {
     const auto edge = find_edge(key);
     if (!edge) {
       return nullptr;
@@ -476,7 +476,7 @@ private:
   }
 
   static
-  inline std::size_t str_size(const T_Key_Internal& key) {
+  inline std::size_t str_size(const KeyInternal& key) {
     if (key.second <= key.first) {
       return 0;
     }
@@ -485,12 +485,12 @@ private:
   }
 
   static
-  inline bool str_empty(const T_Key_Internal& key) {
+  inline bool str_empty(const KeyInternal& key) {
     return key.first >= key.second;
   }
 
   static
-  inline T_Key_Internal str_substr(const T_Key_Internal& key, std::size_t start) {
+  inline KeyInternal str_substr(const KeyInternal& key, std::size_t start) {
     const auto start_used = key.first + start;
     return std::make_pair(
       (start_used < key.second) ? start_used : key.second,
@@ -498,7 +498,7 @@ private:
   }
 
   static
-  inline T_Key_Internal str_substr(const T_Key_Internal& key, std::size_t start, std::size_t len) {
+  inline KeyInternal str_substr(const KeyInternal& key, std::size_t start, std::size_t len) {
     const auto start_used = key.first + start;
     const auto end_used = key.first + len;
     return std::make_pair(
@@ -506,7 +506,7 @@ private:
       (end_used < key.second) ? end_used : key.second);
   }
 
-  static std::string debug_key(const T_Key_Internal& key) {
+  static std::string debug_key(const KeyInternal& key) {
     if (key.second <= key.first) {
       return std::string();
     }
