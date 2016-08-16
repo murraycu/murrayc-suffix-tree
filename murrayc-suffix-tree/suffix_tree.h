@@ -83,9 +83,14 @@ private:
 
     KeyIterator start_;
     KeyIterator end_;
+    bool uses_global_end_ = false;
   };
 
-  inline static KeyIterator str_end(const KeyInternal& key) {
+  inline KeyIterator str_end(const KeyInternal& key) const {
+    if (key.uses_global_end_) {
+      return end_;
+    }
+
     return key.end_;
   }
 
@@ -108,7 +113,7 @@ private:
       Edge(const KeyInternal& part, Node* dest)
         : part_(part),
           dest_(dest) {
-        assert(str_size(part));
+        //assert(str_size(part));
       }
 
       Edge(const Edge& src) = default;
@@ -140,11 +145,11 @@ private:
        * position @pos.
        * @result The new intermediate node.
        */
-      Node* split(std::size_t part_pos) {
-        const auto prefix_part = str_substr(part_, 0, part_pos);
-        assert(str_size(prefix_part) > 0);
-        const auto suffix_part = str_substr(part_, part_pos);
-        assert(str_size(suffix_part) > 0);
+      Node* split(SuffixTree* tree, std::size_t part_pos) {
+        const auto prefix_part = tree->str_substr(part_, 0, part_pos);
+        assert(tree->str_size(prefix_part) > 0);
+        const auto suffix_part = tree->str_substr(part_, part_pos);
+        assert(tree->str_size(suffix_part) > 0);
         const auto dest = dest_;
 
         auto extra_node = new Node;
@@ -237,7 +242,7 @@ private:
             root_.append_node(key_prefix, value);
           } else {
             //std::cout << "      Rule 2: Splitting edge " << debug_key(edge->part_) << " at " << part_len_used << " and adding." << std::endl;
-            auto extra_node = edge->split(part_len_used);
+            auto extra_node = edge->split(this, part_len_used);
             const auto suffix = str_substr(key_prefix, key_prefix_len_used);
             extra_node->append_node(suffix, value);
           }
@@ -323,8 +328,7 @@ private:
     return result;
   }
 
-  static
-  bool has_prefix(const KeyInternal& str, std::size_t str_start_pos, const KeyInternal& prefix, std::size_t prefix_start_pos = 0) {
+  bool has_prefix(const KeyInternal& str, std::size_t str_start_pos, const KeyInternal& prefix, std::size_t prefix_start_pos = 0) const {
     const auto prefix_start = prefix.start_ + prefix_start_pos;
     const auto prefix_end = str_end(prefix);
     const auto iters = std::mismatch(str.start_ + str_start_pos, str_end(str),
@@ -332,7 +336,6 @@ private:
     return iters.second == prefix_end;
   }
 
-  static
   std::size_t common_prefix(const KeyInternal& str, std::size_t str_start_pos, const KeyInternal& prefix, std::size_t prefix_start_pos) {
     const auto str_start = str.start_ + str_start_pos;
     const auto iters = std::mismatch(str_start, str_end(str),
@@ -514,8 +517,7 @@ private:
     return EdgeMatch(parent_edge, parent_edge_len_used, substr_pos);
   }
 
-  static
-  inline std::size_t str_size(const KeyInternal& key) {
+  inline std::size_t str_size(const KeyInternal& key) const {
     const auto end = str_end(key);
     if (end <= key.start_) {
       return 0;
@@ -524,13 +526,11 @@ private:
     return end - key.start_;
   }
 
-  static
-  inline bool str_empty(const KeyInternal& key) {
+  inline bool str_empty(const KeyInternal& key) const {
     return key.start_ >= str_end(key);
   }
 
-  static
-  inline KeyInternal str_substr(const KeyInternal& key, std::size_t start) {
+  inline KeyInternal str_substr(const KeyInternal& key, std::size_t start) const {
     const auto start_used = key.start_ + start;
     const auto key_end = str_end(key);
     return KeyInternal(
@@ -538,8 +538,7 @@ private:
       key_end);
   }
 
-  static
-  inline KeyInternal str_substr(const KeyInternal& key, std::size_t start, std::size_t len) {
+  inline KeyInternal str_substr(const KeyInternal& key, std::size_t start, std::size_t len) const {
     const auto start_used = key.start_ + start;
     const auto end_used = key.start_ + len;
     const auto key_end = str_end(key);
@@ -548,7 +547,7 @@ private:
       (end_used < key_end) ? end_used : key_end);
   }
 
-  static std::string debug_key(const KeyInternal& key) {
+  std::string debug_key(const KeyInternal& key) const {
     const auto key_end = str_end(key);
     if (key_end <= key.start_) {
       return std::string();
@@ -563,7 +562,7 @@ private:
     }
   }
 
-  static void debug_print(const Node* node, std::size_t indent) {
+  void debug_print(const Node* node, std::size_t indent) const {
     if (!node) {
       return;
     }
@@ -592,6 +591,7 @@ private:
 
   Node root_;
   T_Key key_with_terminator_;
+  KeyIterator end_;
 };
 
 #endif // MURRAYC_SUFFIX_TREE_SUFFIX_TREE_H
