@@ -487,6 +487,12 @@ private:
   /** Returns the edge and how much of the edge's part represents the @a substr.
    */
   EdgeMatch find_partial_edge(const KeyInternal& substr) {
+    return find_partial_edge(&root_, substr);
+  }
+
+  /** Returns the edge and how much of the edge's part represents the @a substr.
+   */
+  EdgeMatch find_partial_edge(Node* start_node, const KeyInternal& substr) {
     //std::cout << "find_partial_edge(): substr=" << debug_key(substr) << std::endl;
     EdgeMatch result;
 
@@ -497,7 +503,7 @@ private:
     const auto substr_len = str_size(substr);
     //std::cout << "substr_len=" << substr_len << std::endl;
 
-    Node* node = &root_;
+    Node* node = start_node;
     std::size_t substr_pos = 0;
     typename Node::Edge* parent_edge = nullptr;
     std::size_t parent_edge_len_used = 0;
