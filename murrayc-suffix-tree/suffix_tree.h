@@ -18,8 +18,9 @@ public:
   }
 
   void insert(const T_Key& key, const T_Value& value) {
-    const auto start = std::cbegin(key);
-    const auto end = start + key.size();
+    key_with_terminator_ = key + "$";
+    const auto start = std::cbegin(key_with_terminator_);
+    const auto end = start + key_with_terminator_.size();
     const KeyInternal substr(start, end);
     if (str_empty(substr)) {
       return;
@@ -28,6 +29,7 @@ public:
     insert_ukkonen(substr, value);
   }
 
+  /*
   void insert(const typename T_Key::const_iterator& start, const typename T_Key::const_iterator& end, const T_Value& value) {
     const KeyInternal substr(start, end);
     if (str_empty(substr)) {
@@ -36,6 +38,7 @@ public:
 
     insert_ukkonen(substr, value);
   }
+  */
 
   using Candidates = std::set<T_Value>;
 
@@ -205,20 +208,12 @@ private:
     //std::cout << "insert_ukkonen(): " << debug_key(key) << std::endl;
 
     // Use Ukkonen's algorithm for suffix tree construction:
-    // Unlike the usual implementation, this doesn't use a special $ character
-    // at the end of the input string and the finished paths. Otherwise we could
-    // never store strings containing "$". Instead, we just have a bool to tell
-    // us when our "extension" includes the last character,  and we let
-    // intermediate nodes have values, instead of requiring extra $ nodes.
-    // We check if the exiting edge has no children and and has a value.
     const auto key_start = key.start_;
     const auto key_end = key.end_;
-    const auto key_last = key_end - 1;
 
     // The "phases"
     for (auto i = key_start; i != key_end; ++i) {
       //std::cout << "  i=" << *i << std::endl;
-      const bool is_last_char = (i == key_last);
 
       // The "extensions".
       const auto j_end = i + 1;
@@ -232,28 +227,31 @@ private:
         const auto edge_and_part_pos = find_partial_edge(key_prefix);
         const auto edge = edge_and_part_pos.edge_;
         const auto part_len_used = edge_and_part_pos.edge_part_used_;
-        const auto key_prefix_len_used = edge_and_part_pos.substr_used_;
-
+        const auto key_prefix_len_used = edge_and_part_pos.substr_used_; 
 
         //std::cout << "     key_prefix_len_used=" << key_prefix_len_used << std::endl;
-        if (!edge) {
-          // Rule 2 extension: There is no path that is even a partial match:
-          //std::cout << "      Rule 2: Adding edge to root." << std::endl;
-          if (is_last_char) {
-            //Only add the actual value when we are adding the last character,
-            //so we don't mistakenly identify a path in progress as a real finished path
-            //from a previously-inserted string.
+ 
+        const bool whole_part_used = edge ? (part_len_used == str_size(edge->part_)) : false;
+        const bool whole_prefix_used = key_prefix_len_used == str_size(key_prefix);
+
+        if (!whole_prefix_used && !whole_part_used) {
+          // Rule 2 extension: There is no match, or a partial match:
+          if (!edge) {
+            //std::cout << "      Rule 2: Adding edge to root: " << std::endl;
             root_.append_node(key_prefix, value);
           } else {
-            root_.append_node(key_prefix);
+            //std::cout << "      Rule 2: Splitting edge " << debug_key(edge->part_) << " at " << part_len_used << " and adding." << std::endl;
+            auto extra_node = edge->split(part_len_used);
+            const auto suffix = str_substr(key_prefix, key_prefix_len_used);
+            extra_node->append_node(suffix, value);
           }
 
           continue;
-        }
- 
-        const bool whole_part_used = (part_len_used == str_size(edge->part_));
-        const bool path_is_unfinished = !edge->dest_has_children() && !edge->dest_has_value();
-        if (whole_part_used && path_is_unfinished) {
+        };
+
+        assert(edge);
+
+        if (whole_part_used) {
           // Rule 1 extension: There is a path that is a partial match:
           //std::cout << "      Rule 1: Appending to edge's substring." << std::endl;
           // Extend the edge's path by adding the extra character:
@@ -263,52 +261,11 @@ private:
           edge->part_ = key_prefix;
           //std::cout << "        new part: " << debug_key(edge->part_) << std::endl;
 
-          if (is_last_char) {
-            // Make sure that this path contains our value.
-            // We didn't add it before so we would know it was unfinished.
-            edge->ensure_dest_has_value(value);
-          }
-
           continue;
         }
 
         // Rule 3 extension:
-        if (is_last_char) {
-          //std::cout << "      Rule 3: Inserting internal node." << std::endl;
-          //std::cout << "        edge to split: " << debug_key(edge->part_) << ", part_len_used=" << part_len_used << std::endl;
-          //std::cout << "        key_prefix: " << debug_key(key_prefix) << ", key_prefix_len_used=" << key_prefix_len_used << std::endl;
-          const auto key_prefix_len = str_size(key_prefix);
-          if (whole_part_used) {
-            // We are at the end of a real path:
-            if (key_prefix_len_used == key_prefix_len) {
-              // This is the exact path that we need,
-              // so just make sure our value is set in the leaf.
-              //std::cout << "          Using path as is." << std::endl;
-              edge->dest_->ensure_has_value(value);
-            } else {
-              // We reached the end of a real path (with a value),
-              // but it isn't our complete prefix,
-              // so we just add a child node:
-              const auto suffix = str_substr(key_prefix, key_prefix_len_used);
-              assert(str_size(suffix) > 0);
-              edge->dest_->append_node(suffix, value);
-            }
-          } else {
-            // We are in the middle of a path, so we split it:
-            auto extra_node = edge->split(part_len_used);
-            if (key_prefix_len_used < key_prefix_len) {
-              const auto suffix = str_substr(key_prefix, key_prefix_len_used);
-              //std::cout << "         Split and Appending: " << debug_key(suffix) << std::endl;
-              assert(str_size(suffix) > 0);
-              extra_node->append_node(suffix, value);
-            } else {
-              //std::cout << "         Split and setting value." << std::endl;
-              extra_node->ensure_has_value(value);
-            }
-          }
-        } else {
-          //std::cout << "      Rule 3: Do nothing." << std::endl;
-        }
+        //std::cout << "      Rule 3: Do nothing." << std::endl;
       }
     }
   }
@@ -634,6 +591,7 @@ private:
   }
 
   Node root_;
+  T_Key key_with_terminator_;
 };
 
 #endif // MURRAYC_SUFFIX_TREE_SUFFIX_TREE_H
