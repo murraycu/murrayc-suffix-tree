@@ -86,10 +86,6 @@ private:
   };
 
   inline static KeyIterator str_end(const KeyInternal& key) {
-    if (key.global_end_) {
-      return *(key.global_end_);
-    }
-
     return key.end_;
   }
 
@@ -209,7 +205,7 @@ private:
 
     // Use Ukkonen's algorithm for suffix tree construction:
     const auto key_start = key.start_;
-    const auto key_end = key.end_;
+    const auto key_end = str_end(key);
 
     // The "phases"
     for (auto i = key_start; i != key_end; ++i) {
@@ -330,8 +326,8 @@ private:
   static
   bool has_prefix(const KeyInternal& str, std::size_t str_start_pos, const KeyInternal& prefix, std::size_t prefix_start_pos = 0) {
     const auto prefix_start = prefix.start_ + prefix_start_pos;
-    const auto prefix_end = prefix.end_;
-    const auto iters = std::mismatch(str.start_ + str_start_pos, str.end_,
+    const auto prefix_end = str_end(prefix);
+    const auto iters = std::mismatch(str.start_ + str_start_pos, str_end(str),
         prefix_start, prefix_end);
     return iters.second == prefix_end;
   }
@@ -339,8 +335,8 @@ private:
   static
   std::size_t common_prefix(const KeyInternal& str, std::size_t str_start_pos, const KeyInternal& prefix, std::size_t prefix_start_pos) {
     const auto str_start = str.start_ + str_start_pos;
-    const auto iters = std::mismatch(str_start, str.end_,
-        prefix.start_ + prefix_start_pos, prefix.end_);
+    const auto iters = std::mismatch(str_start, str_end(str),
+        prefix.start_ + prefix_start_pos, str_end(prefix));
     return std::distance(str_start, iters.first);
   }
 
@@ -520,41 +516,45 @@ private:
 
   static
   inline std::size_t str_size(const KeyInternal& key) {
-    if (key.end_ <= key.start_) {
+    const auto end = str_end(key);
+    if (end <= key.start_) {
       return 0;
     }
 
-    return key.end_ - key.start_;
+    return end - key.start_;
   }
 
   static
   inline bool str_empty(const KeyInternal& key) {
-    return key.start_ >= key.end_;
+    return key.start_ >= str_end(key);
   }
 
   static
   inline KeyInternal str_substr(const KeyInternal& key, std::size_t start) {
     const auto start_used = key.start_ + start;
+    const auto key_end = str_end(key);
     return KeyInternal(
-      (start_used < key.end_) ? start_used : key.end_,
-      key.end_);
+      (start_used < key_end) ? start_used : key_end,
+      key_end);
   }
 
   static
   inline KeyInternal str_substr(const KeyInternal& key, std::size_t start, std::size_t len) {
     const auto start_used = key.start_ + start;
     const auto end_used = key.start_ + len;
+    const auto key_end = str_end(key);
     return KeyInternal(
-      (start_used < key.end_) ? start_used : key.end_,
-      (end_used < key.end_) ? end_used : key.end_);
+      (start_used < key_end) ? start_used : key_end,
+      (end_used < key_end) ? end_used : key_end);
   }
 
   static std::string debug_key(const KeyInternal& key) {
-    if (key.end_ <= key.start_) {
+    const auto key_end = str_end(key);
+    if (key_end <= key.start_) {
       return std::string();
     }
 
-    return std::string(key.start_, key.end_);
+    return std::string(key.start_, key_end);
   }
 
   static void debug_print_indent(std::size_t indent) {
