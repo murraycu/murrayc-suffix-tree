@@ -6,6 +6,7 @@
 #include <set>
 #include <stack>
 #include <algorithm>
+#include <memory>
 
 /**
  * @tparam T_Key For instance, std::string, or something other container.
@@ -73,15 +74,15 @@ private:
 
   class KeyInternal {
   public:
-    KeyInternal() 
-    : uses_global_end_(false) {
-    }
+    KeyInternal() = default;
 
     KeyInternal(const KeyIterator& start, const KeyIterator& end)
-    : start_(start), end_(end),
-      uses_global_end_(false) {
-      const char* p = &(*(start_));
-      assert(p != 0);
+    : start_(start), end_(end) {
+    }
+
+    KeyInternal(const KeyIterator& start, const std::shared_ptr<const KeyIterator>& end)
+    : start_(start),
+      global_end_(end) {
     }
 
     KeyInternal(const KeyInternal& src) = default;
@@ -91,12 +92,12 @@ private:
 
     KeyIterator start_;
     KeyIterator end_;
-    bool uses_global_end_;
+    std::shared_ptr<const KeyIterator> global_end_;
   };
 
-  inline KeyIterator str_end(const KeyInternal& key) const {
-    if (key.uses_global_end_) {
-      return end_;
+  inline static KeyIterator str_end(const KeyInternal& key) {
+    if (key.global_end_) {
+      return *(key.global_end_);
     }
 
     return key.end_;
@@ -171,11 +172,11 @@ private:
        * position @pos.
        * @result The new intermediate node.
        */
-      Node* split(SuffixTree* tree, std::size_t part_pos) {
-        const auto prefix_part = tree->str_substr(part_, 0, part_pos);
-        assert(tree->str_size(prefix_part) > 0);
-        const auto suffix_part = tree->str_substr(part_, part_pos);
-        assert(tree->str_size(suffix_part) > 0);
+      Node* split(std::size_t part_pos) {
+        const auto prefix_part = str_substr(part_, 0, part_pos);
+        assert(str_size(prefix_part) > 0);
+        const auto suffix_part = str_substr(part_, part_pos);
+        assert(str_size(suffix_part) > 0);
         const auto dest = dest_;
 
         auto extra_node = new Node;
@@ -248,7 +249,8 @@ private:
     active.length = 0;
 
     std::size_t remaining = 0;
-    end_ = key_start; //end is 1 past the end, so this is equivalent to -1 in the traditional Ukkonnen implementation.
+    auto end_ptr = std::make_shared<KeyIterator>(key_start);
+    KeyIterator& end = *end_ptr; //end is 1 past the end, so this is equivalent to -1 in the traditional Ukkonnen implementation.
 
     // The "phases"
     for (auto i = key_start; i != key_end; ++i) {
@@ -257,7 +259,7 @@ private:
       std::cout << "  key_prefix: " << debug_key(key_prefix) << std::endl;
 
       ++remaining;
-      ++end_; //This extends all existing paths by one character.
+      ++end; //This extends all existing paths by one character.
 
       Node* prev_created_internal_node = nullptr;
 
@@ -265,7 +267,7 @@ private:
       while(remaining) {
 
         std::cout << "    remaining: " << remaining << std::endl;
-        std::cout << "    end: " << std::distance(key_start, end_) << std::endl;
+        std::cout << "    end: " << std::distance(key_start, end) << std::endl;
         if (active.edge_valid) {
           std::cout << "    active.edge: " << std::distance(key_start, active.edge) << std::endl;
           std::cout << "    active.length: " << active.length << std::endl;
@@ -277,14 +279,13 @@ private:
           find_partial_edge(active.node, i);
         const auto edge = edge_match.edge_;
         const auto part_len_used = edge_match.edge_part_used_;
-        const auto key_prefix_len_used = edge_match.substr_used_; 
+        const auto key_prefix_len_used = edge_match.substr_used_;
 
         const bool whole_part_used = edge ? (part_len_used == str_size(edge->part_)) : false;
         const bool whole_prefix_used = key_prefix_len_used == str_size(key_prefix);
 
         if (!whole_prefix_used && !whole_part_used) {
-          KeyInternal prefix = key_prefix;
-          prefix.uses_global_end_ = true;
+          KeyInternal prefix(i, end_ptr);
 
           // Rule 2 extension: There is no match, or a partial match:
           if (part_len_used == 0) {
@@ -300,9 +301,9 @@ private:
           } else if (key_prefix_len_used == 0) {
             // There is a partial match:
             std::cout << "      Rule 2: Splitting edge " << debug_key(edge->part_) << " at " << part_len_used << " and adding." << std::endl;
-            auto extra_node = edge->split(this, part_len_used);
+            auto extra_node = edge->split(part_len_used);
             auto suffix = str_substr(prefix, key_prefix_len_used);
-            suffix.uses_global_end_ = true;
+            suffix.global_end_ = end_ptr;
             extra_node->append_node(suffix, value);
 
             // Every internal node should have a suffix link:
@@ -417,7 +418,8 @@ private:
     return result;
   }
 
-  bool has_prefix(const KeyInternal& str, std::size_t str_start_pos, const KeyInternal& prefix, std::size_t prefix_start_pos = 0) const {
+  static
+  bool has_prefix(const KeyInternal& str, std::size_t str_start_pos, const KeyInternal& prefix, std::size_t prefix_start_pos = 0) {
     const auto prefix_start = prefix.start_ + prefix_start_pos;
     const auto prefix_end = str_end(prefix);
     const auto iters = std::mismatch(str.start_ + str_start_pos, str_end(str),
@@ -425,6 +427,7 @@ private:
     return iters.second == prefix_end;
   }
 
+  static
   std::size_t common_prefix(const KeyInternal& str, std::size_t str_start_pos, const KeyInternal& prefix, std::size_t prefix_start_pos) {
     const auto str_start = str.start_ + str_start_pos;
     const auto iters = std::mismatch(str_start, str_end(str),
@@ -558,27 +561,28 @@ private:
           //Examine all the next edges, to choose one.
           typename Node::Edge* next_edge = nullptr;
           auto node = edge->dest_;
-          for (auto& e : node->children_) {
-            const auto& next_edge_part = e.part_;
+          const auto end = std::end(node->children_);
+          const auto iter = std::find_if(std::begin(node->children_),
+            end,
+            [substr, substr_pos](const auto& e) {
+              const auto& next_edge_part = e.part_;
 
-            // Only one edge should match:
-            if (has_prefix(next_edge_part, 0, substr, substr_pos)) {
-              //std::cout << "    child node found." << std::endl;
-              next_edge = &e;
-              edge_part_pos = 0;
-              break;
-            }
-          }
-
-          if (next_edge) {
-            // Follow this edge:
-            parent_node = node;
-            parent_edge = edge;
-            edge = next_edge;
-            continue;
-          } else {
+              // Only one edge should match:
+              return has_prefix(next_edge_part, 0, substr, substr_pos);
+            });
+          if (iter == end) {
             return EdgeMatch(edge, len, substr_pos, parent_node);
           }
+
+          //std::cout << "    child node found." << std::endl;
+          next_edge = &(*iter);
+          edge_part_pos = 0;
+
+          // Follow this edge:
+          parent_node = node;
+          parent_edge = edge;
+          edge = next_edge;
+          continue;
         }
       } else if (len == 0) {
         return EdgeMatch(parent_edge, edge_part_pos, 0, parent_node);
@@ -670,7 +674,8 @@ private:
     return edge->dest_;
   }
 
-  inline std::size_t str_size(const KeyInternal& key, std::size_t key_pos = 0) const {
+  static
+  inline std::size_t str_size(const KeyInternal& key, std::size_t key_pos = 0) {
     const auto start = key.start_ + key_pos;
     const auto end = str_end(key);
     if (end <= start) {
@@ -680,11 +685,13 @@ private:
     return end - start;
   }
 
-  inline bool str_empty(const KeyInternal& key) const {
+  static
+  inline bool str_empty(const KeyInternal& key) {
     return key.start_ >= str_end(key);
   }
 
-  inline KeyInternal str_substr(const KeyInternal& key, std::size_t start) const {
+  static
+  inline KeyInternal str_substr(const KeyInternal& key, std::size_t start) {
     const auto start_used = key.start_ + start;
     const auto key_end = str_end(key);
     auto result= KeyInternal(
@@ -693,14 +700,15 @@ private:
 
     // If the input used the global end, then so should the substring,
     // because it has the same end.
-    if (key.uses_global_end_) {
-      result.uses_global_end_ = true;
+    if (key.global_end_) {
+      result.global_end_= key.global_end_;
     }
- 
+
     return result;
   }
 
-  inline KeyInternal str_substr(const KeyInternal& key, std::size_t start, std::size_t len) const {
+  static
+  inline KeyInternal str_substr(const KeyInternal& key, std::size_t start, std::size_t len) {
     const auto start_used = key.start_ + start;
     const auto end_used = key.start_ + len;
     const auto key_end = str_end(key);
@@ -708,8 +716,8 @@ private:
       (start_used < key_end) ? start_used : key_end,
       (end_used < key_end) ? end_used : key_end);
   }
- 
-  std::string debug_key(const KeyInternal& key, std::size_t pos) const {
+
+  static std::string debug_key(const KeyInternal& key, std::size_t pos) {
     const auto key_start = key.start_ + pos;
     const auto key_end = str_end(key);
     if (key_end <= key_start) {
@@ -718,7 +726,8 @@ private:
 
     return std::string(key_start, key_end);
   }
-  std::string debug_key(const KeyInternal& key) const {
+
+  static std::string debug_key(const KeyInternal& key) {
     return debug_key(key, 0);
   }
 
@@ -728,7 +737,7 @@ private:
     }
   }
 
-  void debug_print(const Node* node, std::size_t indent) const {
+  static void debug_print(const Node* node, std::size_t indent) {
     if (!node) {
       return;
     }
@@ -757,7 +766,6 @@ private:
 
   Node root_;
   T_Key key_with_terminator_;
-  KeyIterator end_;
 };
 
 #endif // MURRAYC_SUFFIX_TREE_SUFFIX_TREE_H
