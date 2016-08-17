@@ -8,7 +8,37 @@
 #include <boost/timer/timer.hpp>
 
 static
-void test_simple() {
+void test_simple_single() {
+  using Tree = SuffixTree<std::string, std::size_t>;
+  Tree suffix_tree;
+
+  suffix_tree.insert("xyzxyaxyz", 0);
+
+  {
+    auto results = suffix_tree.find_candidate_values("bob");
+    std::cout << "results.size(): " << results.size() << std::endl;
+    assert(results.size() == 0);
+  }
+
+  {
+    auto results = suffix_tree.find_candidate_values("an");
+    std::cout << "results.size(): " << results.size() << std::endl;
+    assert(results.size() == 0);
+  }
+
+  {
+    auto results = suffix_tree.find_candidate_values("zx");
+    std::cout << "results.size(): " << results.size() << std::endl;
+    assert(results.size() == 1);
+    assert(results == Tree::Candidates({0}));
+    for (const auto& result : results) {
+      std::cout << result << ": " << std::endl;
+    }
+  }
+}
+
+static
+void test_simple_multiple() {
   using Tree = SuffixTree<std::string, std::size_t>;
   Tree suffix_tree;
 
@@ -127,7 +157,9 @@ void test_full_text_index_one_string() {
 }
 
 int main() {
-  test_simple();
+  test_simple_single();
+  test_simple_multiple();
+
   test_full_text_index_individual_strings();
   test_full_text_index_one_string();
 
