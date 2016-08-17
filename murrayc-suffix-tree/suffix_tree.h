@@ -27,6 +27,7 @@ public:
     }
 
     insert_ukkonen(substr, value);
+    assert(debug_exists(key_with_terminator_));
   }
 
   /*
@@ -37,8 +38,10 @@ public:
     }
 
     insert_ukkonen(substr, value);
+    assert(debug_exists(substr));
   }
   */
+
 
   using Candidates = std::set<T_Value>;
 
@@ -70,11 +73,16 @@ private:
 
   class KeyInternal {
   public:
-    KeyInternal() = default;
+    KeyInternal() 
+    : uses_global_end_(false) {
+    }
 
     KeyInternal(const KeyIterator& start, const KeyIterator& end)
-    : start_(start), end_(end) {
-      }
+    : start_(start), end_(end),
+      uses_global_end_(false) {
+      const char* p = &(*(start_));
+      assert(p != 0);
+    }
 
     KeyInternal(const KeyInternal& src) = default;
     KeyInternal& operator=(const KeyInternal& src) = default;
@@ -83,7 +91,7 @@ private:
 
     KeyIterator start_;
     KeyIterator end_;
-    bool uses_global_end_ = false;
+    bool uses_global_end_;
   };
 
   inline KeyIterator str_end(const KeyInternal& key) const {
@@ -93,6 +101,24 @@ private:
 
     return key.end_;
   }
+
+  bool debug_exists(const T_Key& key) const {
+    // TODO: Add const overloads of find_node(), find_edge(), etc,
+    // without duplicating code.
+    //auto unconst = const_cast<std::remove_const_t<decltype(this)>>(this);
+    auto unconst = const_cast<SuffixTree<T_Key, T_Value>*>(this);
+    const auto node = unconst->find_node(key);
+    return node != nullptr;
+  };
+
+  bool debug_exists(const KeyInternal& key) const {
+    // TODO: Add const overloads of find_node(), find_edge(), etc,
+    // without duplicating code.
+    //auto unconst = const_cast<std::remove_const_t<decltype(this)>>(this);
+    auto unconst = const_cast<SuffixTree<T_Key, T_Value>*>(this);
+    const auto node = unconst->find_node(key);
+    return node != nullptr;
+  };
 
   class Node {
   public:
@@ -161,10 +187,6 @@ private:
         return extra_node;
       }
 
-      void ensure_dest_has_value(const T_Value& value) {
-        dest_->ensure_has_value(value);
-      }
-
       KeyInternal part_;
       Node* dest_ = nullptr;
     };
@@ -184,13 +206,6 @@ private:
       children_.emplace_back(part, node);
     }
 
-    void ensure_has_value(const T_Value& value) {
-      const auto end = std::end(values_);
-      if (std::find(std::begin(values_), end, value) == end) {
-        values_.emplace_back(value);
-      }
-    }
-
     inline bool has_value() const {
       return !values_.empty();
     }
@@ -203,6 +218,17 @@ private:
     // TODO: Wastes space on non-leaves.
     // TODO: Use a set, though that would not allow duplicates.
     std::vector<T_Value> values_;
+
+    // For Ukkonen's Suffix Tree construction algorithm.
+    Node* suffix_link_ = nullptr;
+  };
+
+  class ActivePoint {
+  public:
+    Node* node = nullptr;
+    bool edge_valid = false;
+    KeyIterator edge; // Instead of starting with -1, we set active.edge_valid to false.
+    std::size_t length = 0;
   };
 
   void insert_ukkonen(const KeyInternal& key, const T_Value& value) {
@@ -212,61 +238,124 @@ private:
     const auto key_start = key.start_;
     const auto key_end = str_end(key);
 
+
+    // These determine where the next phase will start.
+    // We start at the active.node, on the edge with first character key[active.edge],
+    // and active.length characters along that edge.
+    ActivePoint active;
+    active.node = &root_;
+    active.edge_valid = false;
+    active.length = 0;
+
+    std::size_t remaining = 0;
+    end_ = key_start; //end is 1 past the end, so this is equivalent to -1 in the traditional Ukkonnen implementation.
+
     // The "phases"
     for (auto i = key_start; i != key_end; ++i) {
-      //std::cout << "  i=" << *i << std::endl;
+      //TODO: Check for just one character:
+      const KeyInternal key_prefix(i, i + 1);
+      std::cout << "  key_prefix: " << debug_key(key_prefix) << std::endl;
+
+      ++remaining;
+      ++end_; //This extends all existing paths by one character.
+
+      Node* prev_created_internal_node = nullptr;
 
       // The "extensions".
-      const auto j_end = i + 1;
-      for (auto j = key_start; j != j_end; ++j) {
-        //std::cout << "    j=" << *j << std::endl;
+      while(remaining) {
 
-        const KeyInternal key_prefix(j, i + 1);
-        //std::cout << "    key_prefix: " << debug_key(key_prefix) << std::endl;
-        //std::cout << "      key_prefix len:" << str_size(key_prefix) << std::endl;
+        std::cout << "    remaining: " << remaining << std::endl;
+        std::cout << "    end: " << std::distance(key_start, end_) << std::endl;
+        if (active.edge_valid) {
+          std::cout << "    active.edge: " << std::distance(key_start, active.edge) << std::endl;
+          std::cout << "    active.length: " << active.length << std::endl;
+        }
 
-        const auto edge_and_part_pos = find_partial_edge(key_prefix);
-        const auto edge = edge_and_part_pos.edge_;
-        const auto part_len_used = edge_and_part_pos.edge_part_used_;
-        const auto key_prefix_len_used = edge_and_part_pos.substr_used_; 
+        // An active.length of 0 means we ignore the active.edge.
+        const auto edge_match = (active.edge_valid && active.length) ?
+          find_partial_edge(active, i) :
+          find_partial_edge(active.node, i);
+        const auto edge = edge_match.edge_;
+        const auto part_len_used = edge_match.edge_part_used_;
+        const auto key_prefix_len_used = edge_match.substr_used_; 
 
-        //std::cout << "     key_prefix_len_used=" << key_prefix_len_used << std::endl;
- 
         const bool whole_part_used = edge ? (part_len_used == str_size(edge->part_)) : false;
         const bool whole_prefix_used = key_prefix_len_used == str_size(key_prefix);
 
         if (!whole_prefix_used && !whole_part_used) {
+          KeyInternal prefix = key_prefix;
+          prefix.uses_global_end_ = true;
+
           // Rule 2 extension: There is no match, or a partial match:
-          if (!edge) {
-            //std::cout << "      Rule 2: Adding edge to root: " << std::endl;
-            root_.append_node(key_prefix, value);
-          } else {
-            //std::cout << "      Rule 2: Splitting edge " << debug_key(edge->part_) << " at " << part_len_used << " and adding." << std::endl;
+          if (part_len_used == 0) {
+            // There is no match:
+            if (!edge) {
+              std::cout << "      Rule 2: Adding edge to root: " << debug_key(prefix) << std::endl;
+              root_.append_node(prefix, value);
+            } else {
+              // Add to the parent instead
+              std::cout << "      Rule 2: Adding edge to parent node: " << debug_key(prefix) << std::endl;
+              edge_match.parent_node_->append_node(prefix, value);
+            }
+          } else if (key_prefix_len_used == 0) {
+            // There is a partial match:
+            std::cout << "      Rule 2: Splitting edge " << debug_key(edge->part_) << " at " << part_len_used << " and adding." << std::endl;
             auto extra_node = edge->split(this, part_len_used);
-            const auto suffix = str_substr(key_prefix, key_prefix_len_used);
+            auto suffix = str_substr(prefix, key_prefix_len_used);
+            suffix.uses_global_end_ = true;
             extra_node->append_node(suffix, value);
+
+            // Every internal node should have a suffix link:
+            extra_node->suffix_link_ = &root_;
+
+            // A previously-created internal node should now have its suffix link
+            // updated to this new internal node.
+            if (prev_created_internal_node) {
+              prev_created_internal_node->suffix_link_ = extra_node;
+            }
+            prev_created_internal_node = extra_node;
+
+            // Follow previous suffix link if the active node is not root:
+            if (active.node != &root_) {
+              active.node = active.node->suffix_link_;
+              // Not changing active.edge or active.length.
+              // Note: If there are multiple constructions, then active.length
+              // might now be past the end of the actual edge's part.
+            } else {
+              // After creating an internal node,
+              // decrement active.length and increment active.edge,
+              // so we look for the same character in an edge that is the same as
+              // the previously active edge but without the leading character.
+              --active.length;
+              ++active.edge;
+            }
           }
 
+          // There is no change to active.node, active.edge, or active.length
+          // after a Rule 2 extension.
+          --remaining;
           continue;
-        };
+        }
 
         assert(edge);
 
-        if (whole_part_used) {
+        if (whole_part_used && !edge->dest_has_children()) {
           // Rule 1 extension: There is a path that is a partial match:
-          //std::cout << "      Rule 1: Appending to edge's substring." << std::endl;
-          // Extend the edge's path by adding the extra character:
-          // Note: If the suffix tree was storing only one string,
-          // we could avoid the need for this by just using a special "end" value on
-          // all these (to be) leaves, that wouldn't need to be updated.
-          edge->part_ = key_prefix;
-          //std::cout << "        new part: " << debug_key(edge->part_) << std::endl;
+          std::cout << "      Rule 1: Appending to edge's substring, automatically by incrementing end." << std::endl;
 
           continue;
         }
 
         // Rule 3 extension:
-        //std::cout << "      Rule 3: Do nothing." << std::endl;
+        std::cout << "      Rule 3: Do nothing." << std::endl;
+
+        active.node = edge_match.parent_node_;
+        active.edge = edge->part_.start_; //Start of range of the existing edge.
+        active.edge_valid = true;
+        active.length = part_len_used;
+
+        // After a rule 3 extension, immediately start the next "phase".
+        break;
       }
     }
   }
@@ -343,91 +432,20 @@ private:
     return std::distance(str_start, iters.first);
   }
 
-  void insert_single(const KeyInternal& key, const T_Value& value) {
-    //std::cout << "insert(): key=" << debug_key(key) << std::endl;
-    if (str_empty(key)) {
-      return;
-    }
-
-    auto node = &root_;
-    std::size_t key_pos = 0;
-    const auto key_size = str_size(key);
-    //std::cout << "debug: insert_single(): key_size=" << key_size << std::endl;
-    while (key_pos < key_size) {
-      //std::cout << "debug: insert(): remaining key=" << key_pos << std::endl;
-      //std::cout << "  debug: node=" << node << std::endl;
-      //Choose the child node, if any:
-      Node* next = nullptr;
-      for (auto& edge : node->children_) {
-        const auto& part = edge.part_;
-
-        const auto prefix_len = common_prefix(part, 0, key, key_pos);
-        const auto part_len = str_size(part);
-        //std::cout << "key=" << debug_key(key) << ", key_pos=" << key_pos << ", part=" << debug_key(part) <<
-        //  ", prefix_len=" << prefix_len << ", part_len=" << part_len << "\n";
-        //If the edge's part is a prefix of the remaining key:
-        if (prefix_len == 0) {
-          // No match.
-          continue;
-        } else if (prefix_len < part_len) {
-          // If the key is a prefix of the edge's part:
-
-          // TODO:
-          // If this edge leads to the same value (It can lead to many values),
-          // then do nothing, because find() would already use this edge to find this value.
-          // I think this is an "implicit" value. murrayc.
-
-          // Split it,
-          // adding a new intermediate node in it original node's place, with the original node as a child.
-          edge.split(prefix_len);
-
-          // Try the same node again.
-          // This time it might be a perfect match.
-          next = node;
-          break;
-        } else {
-          next = edge.dest_;
-          key_pos += part_len;
-          break;
-        }
-      }
-
-      // Stop when we cannot go further.
-      if (!next) {
-        break;
-      }
-
-      node = next;
-    }
-
-    if (key_pos > key_size) {
-      std::cerr << "Unexpected key_pos.\n";
-      return;
-    }
-
-    if (key_pos == key_size) {
-      //The node already exists, so just add the extra value:
-      node->values_.emplace_back(value);
-      return;
-    }
-
-    // Add a node for the remaining characters:
-    const auto suffix = str_substr(key, key_pos);
-    //std::cout << "Adding suffix: " << suffix << ", with value: " << value << '\n';
-
-    node->append_node(suffix, value);
-  }
-
   /**
    * The Edge and the end of matching prefix of the edge's part.
    */
   class EdgeMatch {
   public:
-    EdgeMatch() {
+    EdgeMatch()
+    : edge_(nullptr),
+      edge_part_used_(0),
+      substr_used_(0),
+      parent_node_(nullptr) {
     }
 
-    EdgeMatch(typename Node::Edge* edge, std::size_t edge_part_used, std::size_t substr_used)
-    : edge_(edge), edge_part_used_(edge_part_used), substr_used_(substr_used) {
+    EdgeMatch(typename Node::Edge* edge, std::size_t edge_part_used, std::size_t substr_used, Node* parent_node)
+    : edge_(edge), edge_part_used_(edge_part_used), substr_used_(substr_used), parent_node_(parent_node) {
     }
 
     EdgeMatch(const EdgeMatch& src) = default;
@@ -435,9 +453,10 @@ private:
     EdgeMatch(EdgeMatch&& src) = default;
     EdgeMatch& operator=(EdgeMatch&& src) = default;
 
-    typename Node::Edge* edge_ = nullptr;
-    std::size_t edge_part_used_ = 0;
-    std::size_t substr_used_ = 0;
+    typename Node::Edge* edge_;
+    std::size_t edge_part_used_;
+    std::size_t substr_used_;
+    Node* parent_node_;
   };
 
   /** Returns the edge and how much of the edge's part represents the @a substr.
@@ -448,82 +467,217 @@ private:
 
   /** Returns the edge and how much of the edge's part represents the @a substr.
    */
-  EdgeMatch find_partial_edge(Node* start_node, const KeyInternal& substr) {
-    //std::cout << "find_partial_edge(): substr=" << debug_key(substr) << std::endl;
-    EdgeMatch result;
+  EdgeMatch find_partial_edge(Node* start_node, const KeyIterator& next_char) {
 
-    if (str_empty(substr)) {
-      return result;
+    const KeyInternal substr(next_char, next_char + 1);
+    return find_partial_edge(start_node, substr);
+  }
+
+  /** Returns the edge and how much of the edge's part represents the @a substr.
+   */
+  EdgeMatch find_partial_edge(Node* start_node, const KeyInternal& substr) {
+    // Try all edges.
+    for (auto& edge : start_node->children_) {
+      const auto result = find_partial_edge_from_edge(start_node, &edge, 0, substr);
+      if (result.edge_part_used_ > 0) {
+        return result;
+      }
     }
 
+    return EdgeMatch();
+  }
+
+  /** Returns the edge and how much of the edge's part represents the @a substr.
+   */
+  EdgeMatch find_partial_edge(const ActivePoint& active, const KeyIterator& next_char) {
+
+    const KeyInternal substr(next_char, next_char + 1);
+    return find_partial_edge(active, substr);
+  }
+
+  /** Returns the edge and how much of the edge's part represents the @a substr.
+   */
+  EdgeMatch find_partial_edge(const ActivePoint& active, const KeyInternal& substr) {
+    auto start_node = active.node;
+    assert(start_node);
+
+    if (str_empty(substr)) {
+      return EdgeMatch();
+    }
+
+    // If an edge was specified, start there first,
+    // instead of examining all edges from the start node.
+    typename Node::Edge* start_edge = nullptr;
+
+    const auto end = std::end(start_node->children_);
+    auto iter = std::find_if(std::begin(start_node->children_), end,
+      [active](const auto& edge) {
+        return *(edge.part_.start_) == *active.edge;
+      });
+    if (iter != end) {
+      //std::cout << "active_edge found: " << debug_key(iter->part_) << std::endl;
+      start_edge = &(*iter);
+    }
+    assert(start_edge);
+
+    return find_partial_edge_from_edge(start_node, start_edge, active.length, substr);
+  }
+
+  EdgeMatch find_partial_edge_from_edge(Node* start_edge_parent_node, typename Node::Edge* start_edge, std::size_t start_edge_pos, const KeyInternal& substr) {
     const auto substr_len = str_size(substr);
-    //std::cout << "substr_len=" << substr_len << std::endl;
+    auto edge = start_edge;
+    auto edge_part_pos = start_edge_pos;
+    auto substr_pos = 0;
+    Node* parent_node = start_edge_parent_node;
+    typename Node::Edge* parent_edge = start_edge;
+    while(true) {
 
-    Node* node = start_node;
-    std::size_t substr_pos = 0;
-    typename Node::Edge* parent_edge = nullptr;
-    std::size_t parent_edge_len_used = 0;
-    while (node) {
-      //std::cout << "  node:" << std::endl;
-      bool edge_found = false;
-      for (auto& edge : node->children_) {
-        const auto& edge_part = edge.part_;
-        //std::cout << "    edge: part=" << debug_key(edge_part) << std::endl;
+      const auto& edge_part = edge->part_;
+      //std::cout << "    edge: part=" << debug_key(edge_part) << ", edge_part_pos=" << edge_part_pos <<
+      //  ", substr: " << debug_key(substr, substr_pos) << std::endl;
 
-        const auto len = common_prefix(substr, substr_pos, edge_part, 0);
-        //std::cout << "      common_prefix_len=" << len << std::endl;
-        if (len == 0) {
+      const auto len = common_prefix(substr, substr_pos, edge_part, edge_part_pos);
+      //std::cout << "      common_prefix_len=" << len << std::endl;
+
+      const auto substr_remaining_len = substr_len - substr_pos;
+      //std::cout << "      substr_remaining_len=" << substr_remaining_len << std::endl;
+      const auto edge_part_used = len + edge_part_pos;
+      //std::cout << "      edge_part_used=" << edge_part_used << std::endl;
+      if (len == str_size(edge_part, edge_part_pos)) {
+        // The remaining substr has edge_part as a prefix.
+        if (len == substr_remaining_len) {
+          // And that uses up all of our substr:
+          return EdgeMatch(edge, edge_part_used, substr_len, parent_node);
+        } else {
+          //std::cout << "  Examining child nodes" << std::endl;
+          // Some of our substr is still unused.
+          //std::cout << "        following partial edge." << std::endl;
+          // Follow the edge to try to use the rest of the substr:
+          substr_pos += str_size(edge_part, edge_part_pos);
+
+          //Examine all the next edges, to choose one.
+          typename Node::Edge* next_edge = nullptr;
+          auto node = edge->dest_;
+          for (auto& e : node->children_) {
+            const auto& next_edge_part = e.part_;
+
+            // Only one edge should match:
+            if (has_prefix(next_edge_part, 0, substr, substr_pos)) {
+              //std::cout << "    child node found." << std::endl;
+              next_edge = &e;
+              edge_part_pos = 0;
+              break;
+            }
+          }
+
+          if (next_edge) {
+            // Follow this edge:
+            parent_node = node;
+            parent_edge = edge;
+            edge = next_edge;
+            continue;
+          } else {
+            return EdgeMatch(edge, len, substr_pos, parent_node);
+          }
+        }
+      } else if (len == 0) {
+        return EdgeMatch(parent_edge, edge_part_pos, 0, parent_node);
+      }
+      else if (len == substr_remaining_len) {
+        // The edge has the remaining substr as its prefix.
+        return EdgeMatch(edge, edge_part_used, substr_len, parent_node);
+      } else {
+        // The edge has some of the remaining substr as its prefix.
+        return EdgeMatch(edge, edge_part_used, substr_pos + len, parent_node);
+      }
+    }
+  }
+
+  typename Node::Edge* find_edge(const T_Key& key_str) {
+    //std::cout << "find_node(): key=" << key << std::endl;
+    if (key_str.empty()) {
+      return nullptr;
+    }
+
+    const auto start = std::cbegin(key_str);
+    const auto end = start + key_str.size();
+    const KeyInternal key(start, end);
+    return find_edge(key);
+  }
+
+  typename Node::Edge* find_edge(const KeyInternal& key) {
+    //std::cout << "find_node(): key=" << key << std::endl;
+    if (str_empty(key)) {
+      return nullptr;
+    }
+
+    typename Node::Edge* edge = nullptr;
+    std::size_t key_pos = 0;
+    const auto key_size = str_size(key);
+    while (key_pos < key_size) {
+      //std::cout << "find_node(): remaining key=" << str_substr(key, key_pos) << std::endl;
+      //std::cout << "  children_ size: " << node->children_.size() << std::endl;
+      //Choose the child node, if any:
+      typename Node::Edge* edge_next = nullptr;
+
+      Node* node = edge ? edge->dest_ : &root_;
+      for (auto& child_edge : node->children_) {
+        const auto& part = child_edge.part_;
+        const auto part_size = str_size(part);
+        //std::cout << "  key=" << key << ", key_pos=" << key_pos << ", part=" << part << "\n";
+        if(!has_prefix(key, key_pos, part)) {
           continue;
         }
 
-        const auto substr_remaining_len = substr_len - substr_pos;
-        //std::cout << "      substr_remaining_len=" << substr_remaining_len << std::endl;
-        if (len == str_size(edge_part)) {
-          // The remaining substr has edge_part as a prefix.
-          if (len == substr_remaining_len) {
-            // And that uses up all of our substr:
-            return EdgeMatch(&edge, len, substr_len);
-          } else {
-            // Some of our substr is still unused.
-            //std::cout << "        following partial edge." << std::endl;
-            // Follow the edge to try to use the rest of the substr:
-            node = edge.dest_;
-            substr_pos += str_size(edge_part);
-            edge_found = true;
-
-            // Remember how we got to the followed edge,
-            // so we can return that as a partial path if necessary. 
-            parent_edge = &edge;
-            parent_edge_len_used = len;
-            break;
-          }
-        } else if (len == substr_remaining_len) {
-          // The edge has the remaining substr as its prefix.
-          return EdgeMatch(&edge, len, substr_len);
-        } else {
-          // The edge has some of the remaining substr as its prefix.
-          return EdgeMatch(&edge, len, substr_pos + len);
-        }
-      }
-
-      if (!edge_found) {
+        edge_next = &child_edge;
+        key_pos += part_size;
+        //std::cout << "    next: " << next << std::endl;
         break;
       }
+
+      if (!edge_next) {
+        return nullptr;
+      }
+
+      edge = edge_next;
     }
 
-    //std::cout << "  returning parent_edge=" << static_cast<void*>(parent_edge) <<
-      //"parent_edge_len_used=" << parent_edge_len_used <<
-      //"substr_pos=" << substr_pos << std::endl;
-    return EdgeMatch(parent_edge, parent_edge_len_used, substr_pos);
+    if (key_pos < key_size) {
+      //We didn't find all the parts of the prefix:
+      return nullptr;
+    }
+
+    //std::cout << "node: " << node << std::endl;
+    auto node = edge->dest_;
+    return node->has_value() ? edge : nullptr;
   }
 
-  inline std::size_t str_size(const KeyInternal& key) const {
+  Node* find_node(const T_Key& key) {
+    const auto edge = find_edge(key);
+    if (!edge) {
+      return nullptr;
+    }
+
+    return edge->dest_;
+  }
+
+  Node* find_node(const KeyInternal& key) {
+    const auto edge = find_edge(key);
+    if (!edge) {
+      return nullptr;
+    }
+
+    return edge->dest_;
+  }
+
+  inline std::size_t str_size(const KeyInternal& key, std::size_t key_pos = 0) const {
+    const auto start = key.start_ + key_pos;
     const auto end = str_end(key);
-    if (end <= key.start_) {
+    if (end <= start) {
       return 0;
     }
 
-    return end - key.start_;
+    return end - start;
   }
 
   inline bool str_empty(const KeyInternal& key) const {
@@ -533,9 +687,17 @@ private:
   inline KeyInternal str_substr(const KeyInternal& key, std::size_t start) const {
     const auto start_used = key.start_ + start;
     const auto key_end = str_end(key);
-    return KeyInternal(
+    auto result= KeyInternal(
       (start_used < key_end) ? start_used : key_end,
       key_end);
+
+    // If the input used the global end, then so should the substring,
+    // because it has the same end.
+    if (key.uses_global_end_) {
+      result.uses_global_end_ = true;
+    }
+ 
+    return result;
   }
 
   inline KeyInternal str_substr(const KeyInternal& key, std::size_t start, std::size_t len) const {
@@ -546,14 +708,18 @@ private:
       (start_used < key_end) ? start_used : key_end,
       (end_used < key_end) ? end_used : key_end);
   }
-
-  std::string debug_key(const KeyInternal& key) const {
+ 
+  std::string debug_key(const KeyInternal& key, std::size_t pos) const {
+    const auto key_start = key.start_ + pos;
     const auto key_end = str_end(key);
-    if (key_end <= key.start_) {
+    if (key_end <= key_start) {
       return std::string();
     }
 
-    return std::string(key.start_, key_end);
+    return std::string(key_start, key_end);
+  }
+  std::string debug_key(const KeyInternal& key) const {
+    return debug_key(key, 0);
   }
 
   static void debug_print_indent(std::size_t indent) {
