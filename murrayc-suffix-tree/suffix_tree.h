@@ -26,7 +26,6 @@ public:
     }
 
     insert(substr, value);
-    assert(debug_exists(key));
   }
 
   void insert(const typename T_Key::const_iterator& start, const typename T_Key::const_iterator& end, const T_Value& value) {
@@ -36,9 +35,7 @@ public:
     }
 
     insert(substr, value);
-    assert(debug_exists(substr));
   }
-
 
   using Candidates = std::set<T_Value>;
 
@@ -85,23 +82,13 @@ private:
     KeyIterator end_;
   };
 
-  bool debug_exists(const T_Key& key) const {
-    // TODO: Add const overloads of find_node(), find_edge(), etc,
-    // without duplicating code.
-    //auto unconst = const_cast<std::remove_const_t<decltype(this)>>(this);
-    auto unconst = const_cast<SuffixTree<T_Key, T_Value>*>(this);
-    const auto node = unconst->find_node(key);
-    return node != nullptr;
-  };
+  inline static KeyIterator str_end(const KeyInternal& key) {
+    if (key.global_end_) {
+      return *(key.global_end_);
+    }
 
-  bool debug_exists(const KeyInternal& key) const {
-    // TODO: Add const overloads of find_node(), find_edge(), etc,
-    // without duplicating code.
-    //auto unconst = const_cast<std::remove_const_t<decltype(this)>>(this);
-    auto unconst = const_cast<SuffixTree<T_Key, T_Value>*>(this);
-    const auto node = unconst->find_node(key);
-    return node != nullptr;
-  };
+    return key.end_;
+  }
 
   class Node {
   public:
@@ -416,83 +403,6 @@ private:
       //"parent_edge_len_used=" << parent_edge_len_used <<
       //"substr_pos=" << substr_pos << std::endl;
     return std::make_tuple(parent_edge, parent_edge_len_used, substr_pos);
-  }
-
-  typename Node::Edge* find_edge(const T_Key& key_str) {
-    //std::cout << "find_node(): key=" << key << std::endl;
-    if (key_str.empty()) {
-      return nullptr;
-    }
-
-    const auto start = std::cbegin(key_str);
-    const auto end = start + key_str.size();
-    const KeyInternal key(start, end);
-    return find_edge(key);
-  }
-
-  typename Node::Edge* find_edge(const KeyInternal& key) {
-    //std::cout << "find_node(): key=" << key << std::endl;
-    if (str_empty(key)) {
-      return nullptr;
-    }
-
-    typename Node::Edge* edge = nullptr;
-    std::size_t key_pos = 0;
-    const auto key_size = str_size(key);
-    while (key_pos < key_size) {
-      //std::cout << "find_node(): remaining key=" << str_substr(key, key_pos) << std::endl;
-      //std::cout << "  children_ size: " << node->children_.size() << std::endl;
-      //Choose the child node, if any:
-      typename Node::Edge* edge_next = nullptr;
-
-      Node* node = edge ? edge->dest_ : &root_;
-      for (auto& child_edge : node->children_) {
-        const auto& part = child_edge.part_;
-        const auto part_size = str_size(part);
-        //std::cout << "  key=" << key << ", key_pos=" << key_pos << ", part=" << part << "\n";
-        if(!has_prefix(key, key_pos, part)) {
-          continue;
-        }
-
-        edge_next = &child_edge;
-        key_pos += part_size;
-        //std::cout << "    next: " << next << std::endl;
-        break;
-      }
-
-      if (!edge_next) {
-        return nullptr;
-      }
-
-      edge = edge_next;
-    }
-
-    if (key_pos < key_size) {
-      //We didn't find all the parts of the prefix:
-      return nullptr;
-    }
-
-    //std::cout << "node: " << node << std::endl;
-    auto node = edge->dest_;
-    return node->has_value() ? edge : nullptr;
-  }
-
-  Node* find_node(const T_Key& key) {
-    const auto edge = find_edge(key);
-    if (!edge) {
-      return nullptr;
-    }
-
-    return edge->dest_;
-  }
-
-  Node* find_node(const KeyInternal& key) {
-    const auto edge = find_edge(key);
-    if (!edge) {
-      return nullptr;
-    }
-
-    return edge->dest_;
   }
 
   static
