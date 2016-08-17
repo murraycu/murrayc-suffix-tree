@@ -255,9 +255,7 @@ private:
 
     // The "phases"
     for (auto i = key_start; i != key_end; ++i) {
-      //TODO: Check for just one character:
-      const KeyInternal key_prefix(i, i + 1);
-      std::cout << "  key_prefix: " << debug_key(key_prefix) << std::endl;
+      std::cout << "  character: " << *i << std::endl;
 
       ++remaining;
       ++end; //This extends all existing paths by one character.
@@ -280,30 +278,30 @@ private:
           find_partial_edge(active.node, i);
         const auto edge = edge_match.edge_;
         const auto part_len_used = edge_match.edge_part_used_;
-        const auto key_prefix_len_used = edge_match.substr_used_;
+        assert(edge_match.substr_used_ <= 1);
+        const bool prefix_used = edge_match.substr_used_ > 0;
 
         const bool whole_part_used = edge ? (part_len_used == str_size(edge->part_)) : false;
-        const bool whole_prefix_used = key_prefix_len_used == str_size(key_prefix);
 
-        if (!whole_prefix_used && !whole_part_used) {
+        if (!prefix_used && !whole_part_used) {
           KeyInternal prefix(i, end_ptr);
 
-          // Rule 2 extension: There is no match, or a partial match:
+          // Rule 2 extension: There is no match:
           if (part_len_used == 0) {
-            // There is no match:
+            // There is no match from root:
             if (!edge) {
               std::cout << "      Rule 2: Adding edge to root: " << debug_key(prefix) << std::endl;
               root_.append_node(prefix, value);
             } else {
-              // Add to the parent instead
+              // There is no match from a non-root node, so add to the parent instead
               std::cout << "      Rule 2: Adding edge to parent node: " << debug_key(prefix) << std::endl;
               edge_match.parent_node_->append_node(prefix, value);
             }
-          } else if (key_prefix_len_used == 0) {
-            // There is a partial match:
+          } else {
+            // There is a partial match, in the middle of an edge:
             std::cout << "      Rule 2: Splitting edge " << debug_key(edge->part_) << " at " << part_len_used << " and adding." << std::endl;
             auto extra_node = edge->split(part_len_used);
-            auto suffix = str_substr(prefix, key_prefix_len_used);
+            auto suffix = str_substr(prefix, 1);
             suffix.global_end_ = end_ptr;
             extra_node->append_node(suffix, value);
 
@@ -472,7 +470,6 @@ private:
   /** Returns the edge and how much of the edge's part represents the @a substr.
    */
   EdgeMatch find_partial_edge(Node* start_node, const KeyIterator& next_char) {
-
     const KeyInternal substr(next_char, next_char + 1);
     return find_partial_edge(start_node, substr);
   }
@@ -496,12 +493,7 @@ private:
   EdgeMatch find_partial_edge(const ActivePoint& active, const KeyIterator& next_char) {
 
     const KeyInternal substr(next_char, next_char + 1);
-    return find_partial_edge(active, substr);
-  }
 
-  /** Returns the edge and how much of the edge's part represents the @a substr.
-   */
-  EdgeMatch find_partial_edge(const ActivePoint& active, const KeyInternal& substr) {
     auto start_node = active.node;
     assert(start_node);
 
