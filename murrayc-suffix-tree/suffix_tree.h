@@ -210,12 +210,16 @@ private:
     if (!start_edge) {
       return result;
     }
+    
+    const auto start_substr_used = std::get<2>(start);
+    if (start_substr_used != str_size(substr)) {
+      return result;
+    }
 
     const auto substr_len = str_size(substr);
 
     using Item = std::pair<std::size_t /* substr_pos */, const Node*>;
     std::stack<Item> stack;
-    const auto start_substr_used = std::get<2>(start);
     stack.emplace(start_substr_used, start_edge->dest_);
 
     while (!stack.empty()) {
