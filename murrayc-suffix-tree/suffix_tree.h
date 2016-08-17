@@ -344,14 +344,14 @@ private:
   /**
    * The Edge and the end of matching prefix of the edge's part.
    */
-  using EdgeAndPartialKey = std::tuple<const typename Node::Edge*,
+  using EdgeMatch = std::tuple<const typename Node::Edge*,
         std::size_t /* edge_part_used */,
         std::size_t /* substr_used */>;
 
   /** Returns the edge and how much of the edge's part represents the @a substr.
    */
-  EdgeAndPartialKey find_partial_edge(const KeyInternal& substr) const {
-    EdgeAndPartialKey result;
+  EdgeMatch find_partial_edge(const KeyInternal& substr) const {
+    EdgeMatch result;
 
     if (str_empty(substr)) {
       return result;
