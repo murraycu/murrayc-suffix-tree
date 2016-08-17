@@ -455,9 +455,15 @@ private:
       return;
     }
 
+
     for (const auto& edge : node->children_) {
       debug_print_indent(indent);
-      std::cout << debug_key(edge.part_) << std::endl;
+      std::cout << debug_key(edge.part_);
+      if (edge.dest_has_value()) {
+        std::cout << "*";
+      }
+      std::cout << std::endl;
+
       debug_print(edge.dest_, indent + str_size(edge.part_));
     }
   }
