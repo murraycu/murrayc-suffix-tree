@@ -19,16 +19,15 @@ public:
   }
 
   void insert(const T_Key& key, const T_Value& value) {
-    key_with_terminator_ = key + "$";
-    const auto start = std::cbegin(key_with_terminator_);
-    const auto end = start + key_with_terminator_.size();
+    const auto start = std::cbegin(key);
+    const auto end = start + key.size();
     const KeyInternal substr(start, end);
     if (str_empty(substr)) {
       return;
     }
 
     insert_ukkonen(substr, value);
-    assert(debug_exists(key_with_terminator_));
+    assert(debug_exists(key));
   }
 
   /*
@@ -238,7 +237,7 @@ private:
     // Use Ukkonen's algorithm for suffix tree construction:
     const auto key_start = key.start_;
     const auto key_end = str_end(key);
-
+    const auto key_last = key_end - 1;
 
     // These determine where the next phase will start.
     // We start at the active.node, on the edge with first character key[active.edge],
@@ -255,6 +254,7 @@ private:
     // The "phases"
     for (auto i = key_start; i != key_end; ++i) {
       std::cout << "  character: " << *i << std::endl;
+      const bool is_last_char = (i == key_last);
 
       ++remaining;
       ++end; //This extends all existing paths by one character.
@@ -282,7 +282,7 @@ private:
 
         const bool whole_part_used = edge ? (part_len_used == str_size(edge->part_)) : false;
 
-        if (!prefix_used && !whole_part_used) {
+        if ((!prefix_used || is_last_char) && !whole_part_used) {
           KeyInternal prefix(i, end_ptr);
 
           // Rule 2 extension: There is no match:
@@ -757,7 +757,6 @@ private:
   }
 
   Node root_;
-  T_Key key_with_terminator_;
 };
 
 #endif // MURRAYC_SUFFIX_TREE_SUFFIX_TREE_H
