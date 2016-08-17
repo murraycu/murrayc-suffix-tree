@@ -292,9 +292,10 @@ private:
 
             // Follow previous suffix link if the active node is not root:
             if (active.node != &root_) {
+              std::cout << "      Following suffix link of active node." << std::endl;
               active.node = active.node->suffix_link_;
-              // Not changing active.edge or active.length.
-              // Note: If there are multiple constructions, then active.length
+              // Not changing active_edge or active_length.
+              // Note: If there are multiple constructions, then active_length
               // might now be past the end of the actual edge's part.
             } else {
               // After creating an internal node,
