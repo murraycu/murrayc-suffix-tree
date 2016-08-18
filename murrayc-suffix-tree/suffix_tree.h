@@ -414,18 +414,6 @@ private:
     Node* parent_node_;
   };
 
-  /** Returns the edge and how much of the edge's part represents the @a substr.
-   */
-  static
-  EdgeMatch find_partial_edge(Node* start_node, const KeyIterator& next_char) {
-    auto edge = find_edge(start_node, next_char);
-    if (!edge) {
-      return EdgeMatch();
-    }
-
-    return EdgeMatch(edge, 1, 1, start_node);
-  }
-
   static
   typename Node::Edge* find_edge(Node* node, const KeyIterator& next_char) {
     typename Node::Edge* result = nullptr;
@@ -443,7 +431,19 @@ private:
     return result;
   }
 
-  /** Returns the edge and how much of the edge's part represents the @a substr.
+  /** Returns the edge and how far along the edge's part the character was found..
+   */
+  static
+  EdgeMatch find_partial_edge(Node* start_node, const KeyIterator& next_char) {
+    auto edge = find_edge(start_node, next_char);
+    if (!edge) {
+      return EdgeMatch();
+    }
+
+    return EdgeMatch(edge, 1, 1, start_node);
+  }
+
+  /** Returns the edge and how far along the edge's part the character was found.
    */
   static
   EdgeMatch find_partial_edge(const ActivePoint& active, const KeyIterator& next_char) {
