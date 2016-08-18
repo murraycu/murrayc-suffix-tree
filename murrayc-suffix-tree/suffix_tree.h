@@ -41,7 +41,7 @@ public:
 
   /** Finds the values for any key containing this substring.
    */
-  Candidates find_candidate_values(const T_Key& substr) const {
+  Candidates find(const T_Key& substr) const {
     Candidates result;
 
     if (substr.empty()) {
@@ -52,7 +52,7 @@ public:
     const auto start = std::cbegin(substr);
     const auto end = start + substr.size();
     const KeyInternal substr_key(start, end);
-    return find_candidate_values(substr_key);
+    return find(substr_key);
   }
 
   void debug_print() const {
@@ -185,7 +185,7 @@ private:
 
   /** Finds the values for any key containing this substring.
    */
-  std::set<T_Value> find_candidate_values(const KeyInternal& substr) const {
+  std::set<T_Value> find(const KeyInternal& substr) const {
     std::set<T_Value> result;
 
     if (str_empty(substr)) {
@@ -288,7 +288,7 @@ private:
 
           // TODO:
           // If this edge leads to the same value (It can lead to many values),
-          // then do nothing, because find_candidate_values() would already use this edge to find this value.
+          // then do nothing, because find() would already use this edge to find this value.
           // I think this is an "implicit" value. murrayc.
 
           // Split it,

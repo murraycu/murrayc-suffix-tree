@@ -15,19 +15,19 @@ void test_simple_single() {
   suffix_tree.insert("xyzxyaxyz", 0);
 
   {
-    auto results = suffix_tree.find_candidate_values("bob");
+    auto results = suffix_tree.find("bob");
     std::cout << "results.size(): " << results.size() << std::endl;
     assert(results.size() == 0);
   }
 
   {
-    auto results = suffix_tree.find_candidate_values("an");
+    auto results = suffix_tree.find("an");
     std::cout << "results.size(): " << results.size() << std::endl;
     assert(results.size() == 0);
   }
 
   {
-    auto results = suffix_tree.find_candidate_values("zx");
+    auto results = suffix_tree.find("zx");
     std::cout << "results.size(): " << results.size() << std::endl;
     assert(results.size() == 1);
     assert(results == Tree::Candidates({0}));
@@ -47,7 +47,7 @@ void test_simple_multiple() {
   suffix_tree.insert("bar", 2);
   suffix_tree.insert("foobar", 3);
 
-  auto results = suffix_tree.find_candidate_values("an");
+  auto results = suffix_tree.find("an");
   std::cout << "results.size(): " << results.size() << std::endl;
   assert(results.size() == 2);
   assert(results == Tree::Candidates({0, 1}));
@@ -55,7 +55,7 @@ void test_simple_multiple() {
     std::cout << result << ": " << std::endl;
   }
 
-  results = suffix_tree.find_candidate_values("bar");
+  results = suffix_tree.find("bar");
   std::cout << "results.size(): " << results.size() << std::endl;
   assert(results.size() == 2);
   assert(results == Tree::Candidates({2, 3}));
@@ -91,7 +91,7 @@ void test_full_text_index_individual_strings() {
 
   std::cout << "SuffixTree: Search:" << std::endl;
   timer.start();
-  const auto results = suffix_tree.find_candidate_values("xio");
+  const auto results = suffix_tree.find("xio");
   timer.stop();
   timer.report();
 
@@ -146,7 +146,7 @@ void test_full_text_index_one_string() {
 
   std::cout << "SuffixTree: Search:" << std::endl;
   timer.start();
-  const auto results = suffix_tree.find_candidate_values("xio");
+  const auto results = suffix_tree.find("xio");
   timer.stop();
   timer.report();
 
