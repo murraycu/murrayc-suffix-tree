@@ -347,24 +347,11 @@ private:
     if (str_empty(substr)) {
       return result;
     }
-
-    auto unconst = const_cast<SuffixTree<T_Key, T_Value>*>(this);
-    const auto start = unconst->find_partial_edge(substr);
-    const auto start_edge = start.edge_;
-    if (!start_edge) {
-      return result;
-    }
- 
-    const auto start_substr_used = start.substr_used_;
-    if (start_substr_used != str_size(substr)) {
-      return result;
-    }
-
     const auto substr_len = str_size(substr);
 
     using Item = std::pair<std::size_t /* substr_pos */, const Node*>;
     std::stack<Item> stack;
-    stack.emplace(start_substr_used, start_edge->dest_);
+    stack.emplace(0, &root_);
 
     while (!stack.empty()) {
       const auto item = stack.top();
@@ -373,10 +360,14 @@ private:
       const auto substr_pos = item.first;
       const auto node = item.second;
 
-      if (node->has_value()) {
-        result.insert(std::cbegin(node->values_), std::cend(node->values_));
+      //If we have already used all of the substring,
+      //then use all subsequent leaf nodes.
+      if (substr_pos >= substr_len) {
+        if (node->has_value()) {
+          result.insert(std::cbegin(node->values_), std::cend(node->values_));
 
-        //And continue to examine children, because they can have values too.
+          //And continue to examine children, because they can have values too.
+        }
       }
 
       for (auto edge : node->children_) {
@@ -442,20 +433,9 @@ private:
 
   /** Returns the edge and how much of the edge's part represents the @a substr.
    */
-  EdgeMatch find_partial_edge(const KeyInternal& substr) {
-    return find_partial_edge(&root_, substr);
-  }
-
-  /** Returns the edge and how much of the edge's part represents the @a substr.
-   */
   EdgeMatch find_partial_edge(Node* start_node, const KeyIterator& next_char) {
     const KeyInternal substr(next_char, next_char + 1);
-    return find_partial_edge(start_node, substr);
-  }
 
-  /** Returns the edge and how much of the edge's part represents the @a substr.
-   */
-  EdgeMatch find_partial_edge(Node* start_node, const KeyInternal& substr) {
     // Try all edges.
     for (auto& edge : start_node->children_) {
       const auto result = find_partial_edge_from_edge(start_node, &edge, 0, substr);
