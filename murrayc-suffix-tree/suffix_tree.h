@@ -433,11 +433,10 @@ private:
   /** Returns the edge and how much of the edge's part represents the @a substr.
    */
   EdgeMatch find_partial_edge(Node* start_node, const KeyIterator& next_char) {
-    const KeyInternal substr(next_char, next_char + 1);
 
     // Try all edges.
     for (auto& edge : start_node->children_) {
-      const auto result = find_partial_edge_from_edge(start_node, &edge, 0, substr);
+      const auto result = find_partial_edge_from_edge(start_node, &edge, 0, next_char);
       if (result.edge_part_used_ > 0) {
         return result;
       }
@@ -466,23 +465,18 @@ private:
   /** Returns the edge and how much of the edge's part represents the @a substr.
    */
   EdgeMatch find_partial_edge(const ActivePoint& active, const KeyIterator& next_char) {
-
-    const KeyInternal substr(next_char, next_char + 1);
-
     auto start_node = active.node;
     assert(start_node);
-
-    if (str_empty(substr)) {
-      return EdgeMatch();
-    }
 
     auto start_edge = find_edge(start_node, active.edge);
     assert(start_edge);
 
-    return find_partial_edge_from_edge(start_node, start_edge, active.length, substr);
+    return find_partial_edge_from_edge(start_node, start_edge, active.length, next_char);
   }
 
-  EdgeMatch find_partial_edge_from_edge(Node* start_edge_parent_node, typename Node::Edge* start_edge, std::size_t start_edge_pos, const KeyInternal& substr) {
+  EdgeMatch find_partial_edge_from_edge(Node* start_edge_parent_node, typename Node::Edge* start_edge, std::size_t start_edge_pos, const KeyIterator& next_char) {
+    const KeyInternal substr(next_char, next_char + 1);
+
     const auto substr_len = str_size(substr);
     auto edge = start_edge;
     auto edge_part_pos = start_edge_pos;
