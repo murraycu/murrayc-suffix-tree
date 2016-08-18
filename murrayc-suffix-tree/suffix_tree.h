@@ -447,6 +447,23 @@ private:
     return EdgeMatch();
   }
 
+  static
+  typename Node::Edge* find_edge(Node* node, const KeyIterator& next_char) {
+    typename Node::Edge* result = nullptr;
+
+    const auto& ch = *next_char;
+    const auto end = std::end(node->children_);
+    auto iter = std::find_if(std::begin(node->children_), end,
+      [&ch]( auto& edge) {
+        return *(edge.part_.start_) == ch;
+      });
+    if (iter != end) {
+      result = &(*iter);
+    }
+
+    return result;
+  }
+
   /** Returns the edge and how much of the edge's part represents the @a substr.
    */
   EdgeMatch find_partial_edge(const ActivePoint& active, const KeyIterator& next_char) {
@@ -460,19 +477,7 @@ private:
       return EdgeMatch();
     }
 
-    // If an edge was specified, start there first,
-    // instead of examining all edges from the start node.
-    typename Node::Edge* start_edge = nullptr;
-
-    const auto end = std::end(start_node->children_);
-    auto iter = std::find_if(std::begin(start_node->children_), end,
-      [active](const auto& edge) {
-        return *(edge.part_.start_) == *active.edge;
-      });
-    if (iter != end) {
-      //std::cout << "active_edge found: " << debug_key(iter->part_) << std::endl;
-      start_edge = &(*iter);
-    }
+    auto start_edge = find_edge(start_node, active.edge);
     assert(start_edge);
 
     return find_partial_edge_from_edge(start_node, start_edge, active.length, substr);
