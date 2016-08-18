@@ -257,12 +257,10 @@ private:
           find_partial_edge(active.node, i);
         const auto edge = edge_match.edge_;
         const auto part_len_used = edge_match.edge_part_used_;
-        assert(edge_match.substr_used_ <= 1);
-        const bool prefix_used = edge_match.substr_used_ > 0;
 
         const bool whole_part_used = edge ? (part_len_used == str_size(edge->part_)) : false;
 
-        if ((!prefix_used || is_last_char) && !whole_part_used) {
+        if ((!edge_match.char_found_ || is_last_char) && !whole_part_used) {
           KeyInternal prefix(i, end_ptr);
 
           // Rule 2 extension: There is no match:
@@ -404,12 +402,12 @@ private:
     EdgeMatch()
     : edge_(nullptr),
       edge_part_used_(0),
-      substr_used_(0),
+      char_found_(false),
       parent_node_(nullptr) {
     }
 
-    EdgeMatch(typename Node::Edge* edge, std::size_t edge_part_used, std::size_t substr_used, Node* parent_node)
-    : edge_(edge), edge_part_used_(edge_part_used), substr_used_(substr_used), parent_node_(parent_node) {
+    EdgeMatch(typename Node::Edge* edge, std::size_t edge_part_used, bool char_found, Node* parent_node)
+    : edge_(edge), edge_part_used_(edge_part_used), char_found_(char_found), parent_node_(parent_node) {
     }
 
     EdgeMatch(const EdgeMatch& src) = default;
@@ -419,7 +417,7 @@ private:
 
     typename Node::Edge* edge_;
     std::size_t edge_part_used_;
-    std::size_t substr_used_;
+    bool char_found_;
     Node* parent_node_;
   };
 
@@ -477,7 +475,7 @@ private:
         parent_node = edge->dest_;
         edge = find_edge(parent_node, next_char);
         if (!edge) {
-          return EdgeMatch(edge, edge_part_pos, 0, parent_node);
+          return EdgeMatch(edge, edge_part_pos, false, parent_node);
         }
 
         //Try again at the start of the followed edge:
@@ -486,10 +484,10 @@ private:
       }
 
       if (*part_next == *next_char) {
-        return EdgeMatch(edge, edge_part_pos + 1, 1, parent_node);
+        return EdgeMatch(edge, edge_part_pos + 1, true, parent_node);
       }
 
-      return EdgeMatch(edge, edge_part_pos, 0, parent_node);
+      return EdgeMatch(edge, edge_part_pos, false, parent_node);
     }
   }
 
