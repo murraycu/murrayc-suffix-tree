@@ -20,7 +20,7 @@ public:
 
   void insert(const T_Key& key, const T_Value& value) {
     const auto start = std::cbegin(key);
-    const auto end = start + key.size();
+    const auto end = std::next(start, key.size());
     const KeyInternal substr(start, end);
     if (str_empty(substr)) {
       return;
@@ -51,10 +51,7 @@ public:
       return result;
     }
 
-
-    const auto start = std::cbegin(substr);
-    const auto end = start + substr.size();
-    const KeyInternal substr_key(start, end);
+    const KeyInternal substr_key(std::cbegin(substr), std::cend(substr));
     return find(substr_key);
   }
 
@@ -380,9 +377,9 @@ private:
 
   static
   bool has_prefix(const KeyInternal& str, std::size_t str_start_pos, const KeyInternal& prefix, std::size_t prefix_start_pos = 0) {
-    const auto prefix_start = prefix.start_ + prefix_start_pos;
+    const auto prefix_start = std::next(prefix.start_, prefix_start_pos);
     const auto prefix_end = str_end(prefix);
-    const auto iters = std::mismatch(str.start_ + str_start_pos, str_end(str),
+    const auto iters = std::mismatch(std::next(str.start_, str_start_pos), str_end(str),
         prefix_start, prefix_end);
     return iters.second == prefix_end;
   }
@@ -459,7 +456,7 @@ private:
       //This cannot step more than one character away from an intermediate node.
       assert(edge_part_pos < (str_size(edge_part) + 1));
 
-      const auto part_next = edge_part.start_ + edge_part_pos;
+      const auto part_next = std::next(edge_part.start_, edge_part_pos);
       if (part_next >= str_end(edge_part)) {
         // If the active length tells us to go further than the length of the part,
         // step over the destination.
@@ -486,7 +483,7 @@ private:
 
   static
   inline std::size_t str_size(const KeyInternal& key, std::size_t key_pos = 0) {
-    const auto start = key.start_ + key_pos;
+    const auto start = std::next(key.start_, key_pos);
     const auto end = str_end(key);
     if (end <= start) {
       return 0;
@@ -502,7 +499,7 @@ private:
 
   static
   inline KeyInternal str_substr(const KeyInternal& key, std::size_t start) {
-    const auto start_used = key.start_ + start;
+    const auto start_used = std::next(key.start_, start);
     const auto key_end = str_end(key);
     auto result= KeyInternal(
       (start_used < key_end) ? start_used : key_end,
@@ -519,8 +516,8 @@ private:
 
   static
   inline KeyInternal str_substr(const KeyInternal& key, std::size_t start, std::size_t len) {
-    const auto start_used = key.start_ + start;
-    const auto end_used = key.start_ + len;
+    const auto start_used = std::next(key.start_, start);
+    const auto end_used = std::next(key.start_, len);
     const auto key_end = str_end(key);
     return KeyInternal(
       (start_used < key_end) ? start_used : key_end,
@@ -528,7 +525,7 @@ private:
   }
 
   static std::string debug_key(const KeyInternal& key, std::size_t pos) {
-    const auto key_start = key.start_ + pos;
+    const auto key_start = std::next(key.start_, pos);
     const auto key_end = str_end(key);
     if (key_end <= key_start) {
       return std::string();
