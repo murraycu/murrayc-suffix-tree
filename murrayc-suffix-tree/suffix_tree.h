@@ -145,6 +145,10 @@ private:
         dest_->append_node(part, value);
       }
 
+      inline void add_value_to_dest(const T_Value& value) {
+        dest_->add_value(value);
+      }
+
       /** This inserts an intermediate node by splitting the edge's part at
        * position @pos.
        * @result The new intermediate node.
@@ -270,25 +274,31 @@ private:
             active.node->append_node(prefix, value);
           } else {
             // There is a partial match, in the middle of an edge:
-            std::cout << "      Rule 2: Splitting edge " << debug_key(edge->part_) << " at " << part_len_used << " and adding." << std::endl;
-            auto extra_node = edge->split(part_len_used);
-            if (is_last_char) {
-              // Just let the intermediate node have a value,
-              // instead of having extra leaf nodes just for values.
-              extra_node->add_value(value);
+            assert(edge);
+
+            if (str_size(edge->part_) == part_len_used) {
+              std::cout << "      Rule 2: Adding edge to internal node: " << debug_key(edge->part_) << ": " << debug_key(prefix) << std::endl;
+              // Just add an extra node to this intermediate node:
+              if (is_last_char) {
+                edge->add_value_to_dest(value);
+              } else {
+                edge->append_node_to_dest(prefix, value);
+              }
             } else {
+              std::cout << "      Rule 2: Splitting edge " << debug_key(edge->part_) << " at " << part_len_used << " and adding: " << debug_key(prefix) << std::endl;
+              const auto extra_node = edge->split(part_len_used);
               extra_node->append_node(prefix, value);
-            }
 
-            // Every internal node should have a suffix link:
-            extra_node->suffix_link_ = &root_;
+              // Every internal node should have a suffix link:
+              extra_node->suffix_link_ = &root_;
 
-            // A previously-created internal node should now have its suffix link
-            // updated to this new internal node.
-            if (prev_created_internal_node) {
-              prev_created_internal_node->suffix_link_ = extra_node;
+              // A previously-created internal node should now have its suffix link
+              // updated to this new internal node.
+              if (prev_created_internal_node) {
+                prev_created_internal_node->suffix_link_ = extra_node;
+              }
+              prev_created_internal_node = extra_node;
             }
-            prev_created_internal_node = extra_node;
 
             // Follow previous suffix link if the active node is not root:
             if (active.node != &root_) {
