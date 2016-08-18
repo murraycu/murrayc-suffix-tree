@@ -258,9 +258,7 @@ private:
         const auto edge = edge_match.edge_;
         const auto part_len_used = edge_match.edge_part_used_;
 
-        const bool whole_part_used = edge ? (part_len_used == str_size(edge->part_)) : false;
-
-        if ((!edge_match.char_found_ || is_last_char) && !whole_part_used) {
+        if ((!edge_match.char_found_ || is_last_char)) {
           KeyInternal prefix(i, end_ptr);
 
           // Rule 2 extension: There is no match:
@@ -310,6 +308,7 @@ private:
 
         assert(edge);
 
+        const bool whole_part_used = edge ? (part_len_used == str_size(edge->part_)) : false;
         if (whole_part_used && !edge->dest_has_children()) {
           // Rule 1 extension: There is a path that is a partial match:
           std::cout << "      Rule 1: Appending to edge's substring, automatically by incrementing end." << std::endl;
