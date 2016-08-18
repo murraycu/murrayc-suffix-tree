@@ -353,7 +353,7 @@ private:
     if (!start_edge) {
       return result;
     }
-    
+ 
     const auto start_substr_used = start.substr_used_;
     if (start_substr_used != str_size(substr)) {
       return result;
