@@ -435,16 +435,12 @@ private:
    */
   static
   EdgeMatch find_partial_edge(Node* start_node, const KeyIterator& next_char) {
-
-    // Try all edges.
-    for (auto& edge : start_node->children_) {
-      const auto result = find_partial_edge_from_edge(start_node, &edge, 0, next_char);
-      if (result.edge_part_used_ > 0) {
-        return result;
-      }
+    auto edge = find_edge(start_node, next_char);
+    if (!edge) {
+      return EdgeMatch();
     }
 
-    return EdgeMatch();
+    return EdgeMatch(edge, 1, 1, start_node);
   }
 
   static
