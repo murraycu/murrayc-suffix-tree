@@ -277,9 +277,7 @@ private:
               // instead of having extra leaf nodes just for values.
               extra_node->add_value(value);
             } else {
-              auto suffix = str_substr(prefix, 1);
-              suffix.global_end_ = end_ptr;
-              extra_node->append_node(suffix, value);
+              extra_node->append_node(prefix, value);
             }
 
             // Every internal node should have a suffix link:
