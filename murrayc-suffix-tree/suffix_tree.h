@@ -433,6 +433,7 @@ private:
 
   /** Returns the edge and how much of the edge's part represents the @a substr.
    */
+  static
   EdgeMatch find_partial_edge(Node* start_node, const KeyIterator& next_char) {
 
     // Try all edges.
@@ -465,6 +466,7 @@ private:
 
   /** Returns the edge and how much of the edge's part represents the @a substr.
    */
+  static
   EdgeMatch find_partial_edge(const ActivePoint& active, const KeyIterator& next_char) {
     auto start_node = active.node;
     assert(start_node);
@@ -475,6 +477,7 @@ private:
     return find_partial_edge_from_edge(start_node, start_edge, active.length, next_char);
   }
 
+  static
   EdgeMatch find_partial_edge_from_edge(Node* start_edge_parent_node, typename Node::Edge* start_edge, std::size_t start_edge_pos, const KeyIterator& next_char) {
     const KeyInternal substr(next_char, next_char + 1);
 
