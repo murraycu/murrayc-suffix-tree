@@ -279,15 +279,20 @@ private:
             if (str_size(edge->part_) == part_len_used) {
               std::cout << "      Rule 2: Adding edge to internal node: " << debug_key(edge->part_) << ": " << debug_key(prefix) << std::endl;
               // Just add an extra node to this intermediate node:
-              if (is_last_char) {
+              if (is_last_char && edge_match.char_found_)  {
                 edge->add_value_to_dest(value);
               } else {
                 edge->append_node_to_dest(prefix, value);
               }
             } else {
-              std::cout << "      Rule 2: Splitting edge " << debug_key(edge->part_) << " at " << part_len_used << " and adding: " << debug_key(prefix) << std::endl;
               const auto extra_node = edge->split(part_len_used);
-              extra_node->append_node(prefix, value);
+              if (is_last_char && edge_match.char_found_) {
+                std::cout << "      Rule 2: Splitting edge " << debug_key(edge->part_) << " at " << part_len_used << " and setting value." << std::endl;
+                extra_node->add_value(value);
+              } else {
+                std::cout << "      Rule 2: Splitting edge " << debug_key(edge->part_) << " at " << part_len_used << " and adding: " << debug_key(prefix) << std::endl;
+                extra_node->append_node(prefix, value);
+              }
 
               // Every internal node should have a suffix link:
               extra_node->suffix_link_ = &root_;
