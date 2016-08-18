@@ -747,7 +747,16 @@ private:
       debug_print_indent(indent);
       std::cout << debug_key(edge.part_);
       if (edge.dest_has_value()) {
-        std::cout << "*";
+        std::cout << "(";
+        bool first = true;
+        for (const auto value : edge.dest_->values_) {
+          if (!first) {
+            std::cout << ", ";
+          }
+          std::cout << value;
+          first = false;
+        }
+        std::cout << ")";
       }
       std::cout << std::endl;
 
