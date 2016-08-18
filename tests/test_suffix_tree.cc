@@ -44,9 +44,9 @@ void test_simple_multiple() {
   Tree suffix_tree;
 
   suffix_tree.insert("banana", 0);
+  suffix_tree.debug_print();
   suffix_tree.insert("bandana", 1);
-  suffix_tree.insert("bar", 2);
-  suffix_tree.insert("foobar", 3);
+  suffix_tree.debug_print();
 
   auto results = suffix_tree.find("an");
   std::cout << "results.size(): " << results.size() << std::endl;
@@ -56,6 +56,14 @@ void test_simple_multiple() {
     std::cout << result << ": " << std::endl;
   }
 
+  suffix_tree.insert("bar", 2);
+  suffix_tree.debug_print();
+  results = suffix_tree.find("bar");
+  std::cout << "results.size(): " << results.size() << std::endl;
+  assert(results.size() == 1);
+
+  suffix_tree.insert("foobar", 3);
+  suffix_tree.debug_print();
   results = suffix_tree.find("bar");
   std::cout << "results.size(): " << results.size() << std::endl;
   assert(results.size() == 2);

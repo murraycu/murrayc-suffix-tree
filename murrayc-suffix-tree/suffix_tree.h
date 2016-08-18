@@ -474,22 +474,33 @@ private:
       const auto& edge_part = edge->part_;
 
       //This cannot step more than one character away from an intermediate node.
-      assert(edge_part_pos < (str_size(edge_part) + 1));
+      std::size_t extra_steps = 0;
+      const auto part_len = str_size(edge_part);
+      if (edge_part_pos >= part_len) {
+        extra_steps = edge_part_pos - part_len;
+      }
+
+      //std::cout << "extra_steps: " << extra_steps << std::endl;
+      //During a single ukkonnen construction: assert(extra_steps <= 1);
 
       const auto part_next = std::next(edge_part.start_, edge_part_pos);
       if (part_next >= str_end(edge_part)) {
         // If the active length tells us to go further than the length of the part,
         // step over the destination.
-        //
+        const auto prev_char = next_char - extra_steps;
+
         // Find the edge from the destination that has the next character:
+        const auto edge_start = extra_steps ? prev_char : next_char;
+
         parent_node = edge->dest_;
-        edge = find_edge(parent_node, next_char);
+        auto parent_edge = edge;
+        edge = find_edge(parent_node, edge_start);
         if (!edge) {
-          return EdgeMatch(edge, edge_part_pos, false, parent_node);
+          return EdgeMatch(parent_edge, edge_part_pos, false, parent_node);
         }
 
         //Try again at the start of the followed edge:
-        edge_part_pos = 0;
+        edge_part_pos -= part_len;
         continue;
       }
 
