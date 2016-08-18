@@ -264,15 +264,9 @@ private:
 
           // Rule 2 extension: There is no match:
           if (part_len_used == 0) {
-            // There is no match from root:
-            if (!edge) {
-              std::cout << "      Rule 2: Adding edge to root: " << debug_key(prefix) << std::endl;
-              root_.append_node(prefix, value);
-            } else {
-              // There is no match from a non-root node, so add to the parent instead
-              std::cout << "      Rule 2: Adding edge to parent node: " << debug_key(prefix) << std::endl;
-              edge_match.parent_node_->append_node(prefix, value);
-            }
+            // There is no match:
+            std::cout << "      Rule 2: Adding edge to active node: " << debug_key(prefix) << std::endl;
+            active.node->append_node(prefix, value);
           } else {
             // There is a partial match, in the middle of an edge:
             std::cout << "      Rule 2: Splitting edge " << debug_key(edge->part_) << " at " << part_len_used << " and adding." << std::endl;
