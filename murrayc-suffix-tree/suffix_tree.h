@@ -330,14 +330,6 @@ private:
 
         assert(edge);
 
-        const bool whole_part_used = edge ? (part_len_used == str_size(edge->part_)) : false;
-        if (whole_part_used && !edge->dest_has_children()) {
-          // Rule 1 extension: There is a path that is a partial match:
-          std::cout << "      Rule 1: Appending to edge's substring, automatically by incrementing end." << std::endl;
-
-          continue;
-        }
-
         // Rule 3 extension:
         std::cout << "      Rule 3: Do nothing." << std::endl;
 
