@@ -2,6 +2,7 @@
 #define MURRAYC_SUFFIX_TREE_SUFFIX_TREE_H
 
 #include <iostream>
+#include <unordered_set>
 #include <vector>
 #include <set>
 #include <stack>
@@ -170,7 +171,7 @@ private:
 
     void append_node(const KeyInternal& part, const T_Value& value) {
       const auto extra_node = new Node();
-      extra_node->values_.emplace_back(value);
+      extra_node->values_.emplace(value);
       children_.emplace_back(part, extra_node);
     }
 
@@ -194,7 +195,7 @@ private:
 
     // TODO: Wastes space on non-leaves.
     // TODO: Use a set, though that would not allow duplicates.
-    std::vector<T_Value> values_;
+    std::unordered_set<T_Value> values_;
 
     // For Ukkonen's Suffix Tree construction algorithm.
     Node* suffix_link_ = nullptr;
