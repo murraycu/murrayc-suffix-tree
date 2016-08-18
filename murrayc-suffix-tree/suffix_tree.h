@@ -396,14 +396,6 @@ private:
     return iters.second == prefix_end;
   }
 
-  static
-  std::size_t common_prefix(const KeyInternal& str, std::size_t str_start_pos, const KeyInternal& prefix, std::size_t prefix_start_pos) {
-    const auto str_start = str.start_ + str_start_pos;
-    const auto iters = std::mismatch(str_start, str_end(str),
-        prefix.start_ + prefix_start_pos, str_end(prefix));
-    return std::distance(str_start, iters.first);
-  }
-
   /**
    * The Edge and the end of matching prefix of the edge's part.
    */
@@ -464,86 +456,40 @@ private:
    */
   static
   EdgeMatch find_partial_edge(const ActivePoint& active, const KeyIterator& next_char) {
-    auto start_node = active.node;
-    assert(start_node);
+    assert(active.node);
+    auto edge = find_edge(active.node, active.edge);
+    assert(edge);
 
-    auto start_edge = find_edge(start_node, active.edge);
-    assert(start_edge);
-
-    return find_partial_edge_from_edge(start_node, start_edge, active.length, next_char);
-  }
-
-  static
-  EdgeMatch find_partial_edge_from_edge(Node* start_edge_parent_node, typename Node::Edge* start_edge, std::size_t start_edge_pos, const KeyIterator& next_char) {
-    const KeyInternal substr(next_char, next_char + 1);
-
-    const auto substr_len = str_size(substr);
-    auto edge = start_edge;
-    auto edge_part_pos = start_edge_pos;
-    auto substr_pos = 0;
-    Node* parent_node = start_edge_parent_node;
-    typename Node::Edge* parent_edge = start_edge;
+    auto edge_part_pos = active.length;
+    Node* parent_node = active.node;
     while(true) {
-
       const auto& edge_part = edge->part_;
-      //std::cout << "    edge: part=" << debug_key(edge_part) << ", edge_part_pos=" << edge_part_pos <<
-      //  ", substr: " << debug_key(substr, substr_pos) << std::endl;
 
-      const auto len = common_prefix(substr, substr_pos, edge_part, edge_part_pos);
-      //std::cout << "      common_prefix_len=" << len << std::endl;
+      //This cannot step more than one character away from an intermediate node.
+      assert(edge_part_pos < (str_size(edge_part) + 1));
 
-      const auto substr_remaining_len = substr_len - substr_pos;
-      //std::cout << "      substr_remaining_len=" << substr_remaining_len << std::endl;
-      const auto edge_part_used = len + edge_part_pos;
-      //std::cout << "      edge_part_used=" << edge_part_used << std::endl;
-      if (len == str_size(edge_part, edge_part_pos)) {
-        // The remaining substr has edge_part as a prefix.
-        if (len == substr_remaining_len) {
-          // And that uses up all of our substr:
-          return EdgeMatch(edge, edge_part_used, substr_len, parent_node);
-        } else {
-          //std::cout << "  Examining child nodes" << std::endl;
-          // Some of our substr is still unused.
-          //std::cout << "        following partial edge." << std::endl;
-          // Follow the edge to try to use the rest of the substr:
-          substr_pos += str_size(edge_part, edge_part_pos);
-
-          //Examine all the next edges, to choose one.
-          typename Node::Edge* next_edge = nullptr;
-          auto node = edge->dest_;
-          const auto end = std::end(node->children_);
-          const auto iter = std::find_if(std::begin(node->children_),
-            end,
-            [substr, substr_pos](const auto& e) {
-              const auto& next_edge_part = e.part_;
-
-              // Only one edge should match:
-              return has_prefix(next_edge_part, 0, substr, substr_pos);
-            });
-          if (iter == end) {
-            return EdgeMatch(edge, len, substr_pos, parent_node);
-          }
-
-          //std::cout << "    child node found." << std::endl;
-          next_edge = &(*iter);
-          edge_part_pos = 0;
-
-          // Follow this edge:
-          parent_node = node;
-          parent_edge = edge;
-          edge = next_edge;
-          continue;
+      const auto part_next = edge_part.start_ + edge_part_pos;
+      if (part_next >= str_end(edge_part)) {
+        // If the active length tells us to go further than the length of the part,
+        // step over the destination.
+        //
+        // Find the edge from the destination that has the next character:
+        parent_node = edge->dest_;
+        edge = find_edge(parent_node, next_char);
+        if (!edge) {
+          return EdgeMatch(edge, edge_part_pos, 0, parent_node);
         }
-      } else if (len == 0) {
-        return EdgeMatch(parent_edge, edge_part_pos, 0, parent_node);
+
+        //Try again at the start of the followed edge:
+        edge_part_pos = 0;
+        continue;
       }
-      else if (len == substr_remaining_len) {
-        // The edge has the remaining substr as its prefix.
-        return EdgeMatch(edge, edge_part_used, substr_len, parent_node);
-      } else {
-        // The edge has some of the remaining substr as its prefix.
-        return EdgeMatch(edge, edge_part_used, substr_pos + len, parent_node);
+
+      if (*part_next == *next_char) {
+        return EdgeMatch(edge, edge_part_pos + 1, 1, parent_node);
       }
+
+      return EdgeMatch(edge, edge_part_pos, 0, parent_node);
     }
   }
 
