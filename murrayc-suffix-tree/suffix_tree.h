@@ -188,6 +188,10 @@ private:
       return !values_.empty();
     }
 
+    inline void add_value(const T_Value& value) {
+      values_.emplace(value);
+    }
+
     //We could instead have a std::vector<Node*> children_,
     //of size alphabet (such as 26),
     //to allow O(1) lookup, at the cost of wasted space.
@@ -268,9 +272,15 @@ private:
             // There is a partial match, in the middle of an edge:
             std::cout << "      Rule 2: Splitting edge " << debug_key(edge->part_) << " at " << part_len_used << " and adding." << std::endl;
             auto extra_node = edge->split(part_len_used);
-            auto suffix = str_substr(prefix, 1);
-            suffix.global_end_ = end_ptr;
-            extra_node->append_node(suffix, value);
+            if (is_last_char) {
+              // Just let the intermediate node have a value,
+              // instead of having extra leaf nodes just for values.
+              extra_node->add_value(value);
+            } else {
+              auto suffix = str_substr(prefix, 1);
+              suffix.global_end_ = end_ptr;
+              extra_node->append_node(suffix, value);
+            }
 
             // Every internal node should have a suffix link:
             extra_node->suffix_link_ = &root_;
