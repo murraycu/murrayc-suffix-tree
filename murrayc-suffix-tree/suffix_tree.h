@@ -64,6 +64,7 @@ public:
 
   void debug_print() const {
     std::cout << "Tree:" << std::endl;
+    std::cout << &root_ << ": " << std::endl;
     debug_print(&root_, 0);
     std::cout << std::endl << std::endl;
   }
@@ -744,7 +745,9 @@ private:
 
 
     for (const auto& edge : node->children_) {
+      std::cout << edge.dest_ << ": ";
       debug_print_indent(indent);
+
       std::cout << debug_key(edge.part_);
       if (edge.dest_has_value()) {
         std::cout << "*";
