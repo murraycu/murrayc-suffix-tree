@@ -181,6 +181,13 @@ private:
     }
 
     void append_node(const KeyInternal& part, Node* node) {
+      // A debug assert:
+      const auto iter = std::find_if(std::cbegin(children_), std::cend(children_),
+        [node](const auto& edge) {
+          return edge.dest_ == node;
+        });
+      assert(iter == std::cend(children_));
+
       children_.emplace_back(part, node);
     }
 
