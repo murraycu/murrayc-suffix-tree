@@ -276,33 +276,38 @@ private:
             // There is a partial match, in the middle of an edge:
             assert(edge);
 
+            Node* internal_node = nullptr;
             if (str_size(edge->part_) == part_len_used) {
               std::cout << "      Rule 2: Adding edge to internal node: " << debug_key(edge->part_) << ": " << debug_key(prefix) << std::endl;
               // Just add an extra node to this intermediate node:
               if (is_last_char && edge_match.char_found_)  {
                 edge->add_value_to_dest(value);
+                internal_node = edge->dest_;
               } else {
                 edge->append_node_to_dest(prefix, value);
               }
             } else {
-              const auto extra_node = edge->split(part_len_used);
+              internal_node = edge->split(part_len_used);
               if (is_last_char && edge_match.char_found_) {
                 std::cout << "      Rule 2: Splitting edge " << debug_key(edge->part_) << " at " << part_len_used << " and setting value." << std::endl;
-                extra_node->add_value(value);
+                internal_node->add_value(value);
               } else {
                 std::cout << "      Rule 2: Splitting edge " << debug_key(edge->part_) << " at " << part_len_used << " and adding: " << debug_key(prefix) << std::endl;
-                extra_node->append_node(prefix, value);
+                internal_node->append_node(prefix, value);
               }
+            }
 
+            if (internal_node) {
               // Every internal node should have a suffix link:
-              extra_node->suffix_link_ = &root_;
+              internal_node->suffix_link_ = &root_;
 
               // A previously-created internal node should now have its suffix link
               // updated to this new internal node.
               if (prev_created_internal_node) {
-                prev_created_internal_node->suffix_link_ = extra_node;
+                assert(prev_created_internal_node->suffix_link_);
+                prev_created_internal_node->suffix_link_ = internal_node;
               }
-              prev_created_internal_node = extra_node;
+              prev_created_internal_node = internal_node;
             }
 
             // Follow previous suffix link if the active node is not root:
