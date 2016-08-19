@@ -247,6 +247,7 @@ private:
 
         std::cout << "    remaining: " << remaining << std::endl;
         std::cout << "    end: " << std::distance(key_start, end) << std::endl;
+        std::cout << "    active.node: " << active.node << std::endl;
         if (active.edge_valid) {
           std::cout << "    active.edge: " << std::distance(key_start, active.edge) << std::endl;
           std::cout << "    active.length: " << active.length << std::endl;
@@ -293,6 +294,7 @@ private:
             if (active.node != &root_) {
               const auto iter = suffix_links.find(active.node);
               assert(iter != suffix_links.end());
+              std::cout << "      Following suffix link of active node " << active.node << " to " << iter->second << std::endl;
               active.node = iter->second;
 
               // Not changing active.edge or active.length.
