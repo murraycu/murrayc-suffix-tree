@@ -259,7 +259,7 @@ private:
         const auto edge = edge_match.edge_;
         const auto part_len_used = edge_match.edge_part_used_;
 
-        if ((!edge_match.char_found_)) {
+        if (!edge_match.char_found_) {
           KeyInternal prefix(i, end_ptr);
 
           // Rule 2 extension: There is no match:
