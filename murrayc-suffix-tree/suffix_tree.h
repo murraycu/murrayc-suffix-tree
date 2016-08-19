@@ -21,8 +21,9 @@ public:
   }
 
   void insert(const T_Key& key, const T_Value& value) {
-    const auto start = std::cbegin(key);
-    const auto end = std::next(start, key.size());
+    key_terminated_ = key + "$";
+    const auto start = std::cbegin(key_terminated_);
+    const auto end = std::next(start, key_terminated_.size());
     const KeyInternal substr(start, end);
     if (str_empty(substr)) {
       return;
@@ -216,7 +217,6 @@ private:
     // Use Ukkonen's algorithm for suffix tree construction:
     const auto key_start = key.start_;
     const auto key_end = str_end(key);
-    const auto key_last = key_end - 1;
 
     // These determine where the next phase will start.
     // We start at the active.node, on the edge with first character key[active.edge],
@@ -235,7 +235,6 @@ private:
     // The "phases"
     for (auto i = key_start; i != key_end; ++i) {
       std::cout << "  character: " << *i << std::endl;
-      const bool is_last_char = (i == key_last);
 
       ++remaining;
       ++end; //This extends all existing paths by one character.
@@ -260,7 +259,7 @@ private:
         const auto edge = edge_match.edge_;
         const auto part_len_used = edge_match.edge_part_used_;
 
-        if ((!edge_match.char_found_ || is_last_char)) {
+        if ((!edge_match.char_found_)) {
           KeyInternal prefix(i, end_ptr);
 
           // Rule 2 extension: There is no match:
@@ -272,13 +271,7 @@ private:
             // There is a partial match, in the middle of an edge:
             std::cout << "      Rule 2: Splitting edge " << debug_key(edge->part_) << " at " << part_len_used << " and adding." << std::endl;
             auto extra_node = edge->split(part_len_used);
-            if (is_last_char) {
-              // Just let the intermediate node have a value,
-              // instead of having extra leaf nodes just for values.
-              extra_node->add_value(value);
-            } else {
-              extra_node->append_node(prefix, value);
-            }
+            extra_node->append_node(prefix, value);
 
             // Every internal node should have a suffix link:
             suffix_links[extra_node] = &root_;
@@ -577,6 +570,7 @@ private:
   }
 
   Node root_;
+  T_Key key_terminated_; //To keep the memory allocated.
 };
 
 #endif // MURRAYC_SUFFIX_TREE_SUFFIX_TREE_H
