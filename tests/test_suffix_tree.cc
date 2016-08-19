@@ -77,6 +77,21 @@ void test_simple_multiple_problem4() {
 }
 
 static
+void test_simple_multiple_problem5() {
+  using Tree = SuffixTree<std::string, std::size_t>;
+  Tree suffix_tree;
+
+  suffix_tree.insert("ab", 1);
+  suffix_tree.insert("Xc", 2);
+  suffix_tree.insert("ac", 3);
+  suffix_tree.insert("abc", 4);
+  suffix_tree.debug_print();
+
+  auto results = suffix_tree.find("c");
+  assert(results.size() == 3);
+}
+
+static
 void test_simple_single() {
   using Tree = SuffixTree<std::string, std::size_t>;
   Tree suffix_tree;
@@ -243,6 +258,7 @@ int main() {
   test_simple_multiple_problem2();
   test_simple_multiple_problem3();
   test_simple_multiple_problem4();
+  test_simple_multiple_problem5();
 
   //test_full_text_index_individual_strings();
 
