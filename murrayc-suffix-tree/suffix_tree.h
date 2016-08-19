@@ -2,7 +2,6 @@
 #define MURRAYC_SUFFIX_TREE_SUFFIX_TREE_H
 
 #include <iostream>
-#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 #include <set>
@@ -201,6 +200,9 @@ private:
     // TODO: Wastes space on non-leaves.
     // TODO: Use a set, though that would not allow duplicates.
     std::unordered_set<T_Value> values_;
+
+    // For Ukkonen's Suffix Tree construction algorithm.
+    Node* suffix_link_ = nullptr;
   };
 
   class ActivePoint {
@@ -229,8 +231,6 @@ private:
     std::size_t remaining = 0;
     auto end_ptr = std::make_shared<KeyIterator>(key_start);
     KeyIterator& end = *end_ptr; //end is 1 past the end, so this is equivalent to -1 in the traditional Ukkonnen implementation.
-
-    std::unordered_map<Node*, Node*> suffix_links;
 
     // The "phases"
     for (auto i = key_start; i != key_end; ++i) {
@@ -274,22 +274,19 @@ private:
             extra_node->append_node(prefix, value);
 
             // Every internal node should have a suffix link:
-            suffix_links[extra_node] = &root_;
+            extra_node->suffix_link_ = &root_;
 
             // A previously-created internal node should now have its suffix link
             // updated to this new internal node.
             if (prev_created_internal_node) {
-              suffix_links[prev_created_internal_node] = extra_node;
+              prev_created_internal_node->suffix_link_ = extra_node;
             }
             prev_created_internal_node = extra_node;
 
             // Follow previous suffix link if the active node is not root:
             if (active.node != &root_) {
-              const auto iter = suffix_links.find(active.node);
-              assert(iter != suffix_links.end());
-              std::cout << "      Following suffix link of active node " << active.node << " to " << iter->second << std::endl;
-              active.node = iter->second;
-
+              std::cout << "      Following suffix link of active node " << active.node << " to " << active.node->suffix_link_ << std::endl;
+              active.node = active.node->suffix_link_;
               // Not changing active.edge or active.length.
               // Note: If there are multiple constructions, then active.length
               // might now be past the end of the actual edge's part.
