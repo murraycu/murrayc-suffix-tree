@@ -276,6 +276,11 @@ private:
             // There is a partial match, in the middle of an edge:
             assert(edge);
 
+            // Event though we don't always add an internal node,
+            // if the internal node already existed due to a prevous insert,
+            // this identifies where a first insert would have added
+            // a real internal node, so this is still where we should
+            // store a suffix link and then follow the active node's suffix link.
             Node* internal_node = nullptr;
             if (str_size(edge->part_) == part_len_used) {
               std::cout << "      Rule 2: Adding edge to internal node: " << debug_key(edge->part_) << ": " << debug_key(prefix) << std::endl;
@@ -285,6 +290,7 @@ private:
                 internal_node = edge->dest_;
               } else {
                 edge->append_node_to_dest(prefix, value);
+                internal_node = edge->dest_;
               }
             } else {
               internal_node = edge->split(part_len_used);
