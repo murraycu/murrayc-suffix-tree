@@ -218,7 +218,8 @@ private:
   };
 
   void insert_ukkonen(const KeyInternal& key, const T_Value& value) {
-    //std::cout << "insert_ukkonen(): " << debug_key(key) << std::endl;
+    // std::cout << "insert_ukkonen(): " << debug_key(key) << std::endl;
+    // debug_print();
 
     // Use Ukkonen's algorithm for suffix tree construction:
     const auto key_start = key.start_;
@@ -252,6 +253,7 @@ private:
 
         std::cout << "    remaining: " << remaining << std::endl;
         std::cout << "    end: " << *end << std::endl;
+        std::cout << "    active.node: " << active.node << std::endl;
         if (active.edge_valid) {
           std::cout << "    active.edge: " << *(active.edge) << std::endl;
           std::cout << "    active.length: " << active.length << std::endl;
@@ -319,6 +321,7 @@ private:
             // Follow previous suffix link if the active node is not root:
             if (active.node != &root_) {
               std::cout << "      Following suffix link of active node." << std::endl;
+              assert(active.node->suffix_link_);
               active.node = active.node->suffix_link_;
               // Not changing active_edge or active_length.
               // Note: If there are multiple constructions, then active_length
