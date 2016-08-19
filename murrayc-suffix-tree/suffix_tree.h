@@ -251,9 +251,9 @@ private:
       while(remaining) {
 
         std::cout << "    remaining: " << remaining << std::endl;
-        std::cout << "    end: " << std::distance(key_start, end) << std::endl;
+        std::cout << "    end: " << *end << std::endl;
         if (active.edge_valid) {
-          std::cout << "    active.edge: " << std::distance(key_start, active.edge) << std::endl;
+          std::cout << "    active.edge: " << *(active.edge) << std::endl;
           std::cout << "    active.length: " << active.length << std::endl;
         }
 
