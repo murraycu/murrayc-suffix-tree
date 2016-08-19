@@ -121,6 +121,14 @@ private:
         dest_->append_node(part, value);
       }
 
+      inline bool dest_has_value() const {
+        if (!dest_) {
+          return false;
+        }
+
+        return dest_->has_value();
+      }
+
       /** This inserts an intermediate node by splitting the edge's part at
        * position @pos.
        * @result The new intermediate node.
