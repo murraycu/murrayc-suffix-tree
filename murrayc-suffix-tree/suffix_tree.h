@@ -320,7 +320,7 @@ private:
 
             // Follow previous suffix link if the active node is not root:
             if (active.node != &root_) {
-              std::cout << "      Following suffix link of active node." << std::endl;
+              std::cout << "      Following suffix link of active node " << active.node << " to " << active.node->suffix_link_ << std::endl;
               assert(active.node->suffix_link_);
               active.node = active.node->suffix_link_;
               // Not changing active_edge or active_length.
