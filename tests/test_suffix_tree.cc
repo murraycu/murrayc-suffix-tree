@@ -12,23 +12,17 @@ void test_simple_single() {
   using Tree = SuffixTree<std::string, std::size_t>;
   Tree suffix_tree;
 
-  suffix_tree.insert("xyzxyaxyz", 0);
+  suffix_tree.insert("banana", 0);
   suffix_tree.debug_print();
 
   {
-    auto results = suffix_tree.find("bob");
+    auto results = suffix_tree.find("band");
     std::cout << "results.size(): " << results.size() << std::endl;
     assert(results.size() == 0);
   }
 
   {
-    auto results = suffix_tree.find("an");
-    std::cout << "results.size(): " << results.size() << std::endl;
-    assert(results.size() == 0);
-  }
-
-  {
-    auto results = suffix_tree.find("zx");
+    auto results = suffix_tree.find("ana");
     std::cout << "results.size(): " << results.size() << std::endl;
     assert(results.size() == 1);
     assert(results == Tree::Candidates({0}));
