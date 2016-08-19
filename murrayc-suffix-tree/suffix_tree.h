@@ -314,12 +314,14 @@ private:
 
             if (internal_node) {
               // Every internal node should have a suffix link:
+              std::cout << "      Setting suffix link from " << internal_node << " to root " << &root_ << std::endl;
               internal_node->suffix_link_ = &root_;
 
               // A previously-created internal node should now have its suffix link
               // updated to this new internal node.
               if (prev_created_internal_node) {
                 assert(prev_created_internal_node->suffix_link_);
+                std::cout << "      Updating suffix link from " << prev_created_internal_node << " to " << internal_node << std::endl;
                 prev_created_internal_node->suffix_link_ = internal_node;
               }
               prev_created_internal_node = internal_node;
