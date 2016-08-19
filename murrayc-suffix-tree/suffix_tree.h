@@ -274,11 +274,13 @@ private:
             extra_node->append_node(prefix, value);
 
             // Every internal node should have a suffix link:
+            std::cout << "      Setting suffix link from " << extra_node << " to root " << &root_ << std::endl;
             extra_node->suffix_link_ = &root_;
 
             // A previously-created internal node should now have its suffix link
             // updated to this new internal node.
             if (prev_created_internal_node) {
+              std::cout << "      Updating suffix link from " << prev_created_internal_node << " to " << extra_node << std::endl;
               prev_created_internal_node->suffix_link_ = extra_node;
             }
             prev_created_internal_node = extra_node;
