@@ -167,9 +167,12 @@ private:
       return !values_.empty();
     }
 
-    //We could instead have a std::vector<Node*> children_,
-    //of size alphabet (such as 26),
-    //to allow O(1) lookup, at the cost of wasted space.
+    // We could instead have a std::vector<Node*> children_,
+    // of size alphabet (such as 26),
+    // to allow O(1) lookup, at the cost of wasted space.o
+    // A hash table might be the simplest way, giving amortized O(1) lookup.
+    // But see the mention of suffix trays here:
+    // http://www.murrayc.com/permalink/2016/08/19/suffix-tree-ukkonen-c/
     std::vector<Edge> children_;
 
     // TODO: Wastes space on non-leaves.
