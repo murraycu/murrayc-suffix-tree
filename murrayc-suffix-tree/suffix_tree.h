@@ -295,7 +295,7 @@ private:
     if (!start_edge) {
       return result;
     }
-    
+
     const auto start_substr_used = std::get<2>(start);
     if (start_substr_used != str_size(substr)) {
       return result;
