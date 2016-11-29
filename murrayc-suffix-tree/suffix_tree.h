@@ -1,6 +1,7 @@
 #ifndef MURRAYC_SUFFIX_TREE_SUFFIX_TREE_H
 #define MURRAYC_SUFFIX_TREE_SUFFIX_TREE_H
 
+#include <algorithm>
 #include <iostream>
 #include <vector>
 #include <set>
@@ -117,6 +118,51 @@ public:
     debug_print(&root_, 0);
     std::cout << std::endl << std::endl;
   }
+
+
+  /**
+   * The suffix's begin/end, and the associated value.
+   */
+  using suffixes_type = std::vector<std::pair<Range, T_Value>>;
+
+  suffixes_type get_suffix_array() {
+    // Build a suffix array by doing a lexographically-ordered DFS:
+    suffixes_type result;
+
+    std::stack<Node*> s;
+    s.emplace(&root_);
+    while (!s.empty()) {
+      auto node = s.top();
+      s.pop();
+
+      if (node->has_value()) {
+        for (auto& kv : node->keys_and_values_) {
+          result.emplace_back(kv.first, kv.second);
+        }
+      }
+
+      // Reverse sort this child edges,
+      // so we can put the lexographically-first on the stack last,
+      // so we deal with it first:
+      auto children = node->children_;
+      std::sort(std::begin(children), std::end(children),
+        [](auto a, auto b) {
+          // The first characters of the edges will always be different:
+          const auto& achar = *(a.part_.start_);
+          const auto& bchar = *(b.part_.start_);
+          return bchar < achar;
+        });
+
+      for (auto edge : children) {
+        //const auto& edge_part = edge.part_;
+        const auto& d = edge.dest_;
+        s.emplace(d);
+      }
+    }
+
+    return result;
+  }
+
 
 private:
 

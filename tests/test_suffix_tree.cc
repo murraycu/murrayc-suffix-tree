@@ -251,6 +251,41 @@ void test_simple_multiple_with_position() {
   }
 }
 
+static void
+test_get_suffix_array() {
+  using Tree = SuffixTree<std::string, std::size_t>;
+  Tree suffix_tree;
+
+  // We keep the string alive,
+  // and just pass a reference,
+  // so we can use the iterators that will
+  // be returned by get_suffix_array()
+  const std::string str = "bananabanana";
+  suffix_tree.insert(str, 0);
+
+  const auto sa = suffix_tree.get_suffix_array();
+  std::cout << "Suffix array size: " << sa.size() << std::endl;
+  assert(sa.size() == 12);
+  for (const auto p : sa) {
+    const auto& range = p.first;
+    const auto& value = p.second;
+    std::cout << std::distance(std::cbegin(str), range.start_) << ": "
+      << std::string(range.start_, range.end_) << ": " << value << std::endl;
+  }
+
+  // Check that these are in lexographic order:
+  // The actual comparision in get_suffix_array() is more efficient:
+  const bool sorted = std::is_sorted(std::cbegin(sa), std::cend(sa),
+    [](const auto& a, const auto& b) {
+      const auto& arange = a.first;
+      const auto& brange = b.first;
+      const auto astr = std::string(arange.start_, arange.end_);
+      const auto bstr = std::string(brange.start_, brange.end_);
+      return astr < bstr;
+    });
+  assert(sorted);
+}
+
 int main() {
   test_simple_single();
   test_simple_multiple();
@@ -260,6 +295,8 @@ int main() {
 
   test_simple_single_with_position();
   test_simple_multiple_with_position();
+
+  test_get_suffix_array();
 
   return EXIT_SUCCESS;
 }
