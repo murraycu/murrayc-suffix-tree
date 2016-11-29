@@ -293,6 +293,41 @@ test_get_suffix_array() {
   assert(sorted);
 }
 
+static void
+test_create_from_suffix_array_and_lcp() {
+  using Tree = SuffixTree<std::string, std::size_t>;
+  Tree suffix_tree1;
+
+  // We keep the string alive,
+  // and just pass a reference,
+  // so we can use the iterators that will
+  // be returned by get_suffix_array()
+  const std::string str = "xyzxyaxyz";
+  suffix_tree1.insert(str, 0);
+
+  const auto sa_and_lcp = suffix_tree1.get_suffix_array_and_lcp();
+  const auto& sa = sa_and_lcp.first;
+  const auto& lcp = sa_and_lcp.second;
+
+  Tree suffix_tree2(sa, lcp);
+
+  {
+    auto results = suffix_tree2.find_with_positions("zx");
+    std::cout << "results.size(): " << results.size() << std::endl;
+    assert(results.size() == 1);
+
+    const Tree::Range expected_range(std::cbegin(str) + 2, std::cend(str));
+    const Tree::CandidatesWithPositions expected = {{expected_range, 0}};
+    assert(results == expected);
+    for (const auto& result : results) {
+      const auto& range = result.first;
+      const auto& value = result.second;
+      std::cout << std::distance(std::cbegin(str), range.start_) << ": "
+        << std::string(range.start_, range.end_) << ": " << value << std::endl;
+    }
+  }
+}
+
 int main() {
   test_simple_single();
   test_simple_multiple();
@@ -304,6 +339,7 @@ int main() {
   test_simple_multiple_with_positions();
 
   test_get_suffix_array();
+  test_create_from_suffix_array_and_lcp();
 
   return EXIT_SUCCESS;
 }
