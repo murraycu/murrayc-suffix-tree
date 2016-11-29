@@ -20,7 +20,7 @@ public:
   void insert(const T_Key& key, const T_Value& value) {
     const auto start = std::cbegin(key);
     const auto end = start + key.size();
-    const KeyInternal substr(start, end);
+    const Range substr(start, end);
     if (str_empty(substr)) {
       return;
     }
@@ -29,13 +29,38 @@ public:
   }
 
   void insert(const typename T_Key::const_iterator& start, const typename T_Key::const_iterator& end, const T_Value& value) {
-    const KeyInternal substr(start, end);
+    const Range substr(start, end);
     if (str_empty(substr)) {
       return;
     }
 
     insert(substr, value);
   }
+
+  /// Start and end (1 past last position) of a substring in text_;
+  using KeyIterator = typename T_Key::const_iterator;
+
+  class Range {
+  public:
+    Range() = default;
+
+    Range(const KeyIterator& start, const KeyIterator& end)
+    : start_(start), end_(end) {
+      }
+
+    Range(const Range& src) = default;
+    Range& operator=(const Range& src) = default;
+    Range(Range&& src) = default;
+    Range& operator=(Range&& src) = default;
+
+    bool operator==(const Range& src) const {
+      return start_ == src.start_ &&
+        end_ == src.end_;
+    }
+
+    KeyIterator start_;
+    KeyIterator end_;
+  };
 
   using Candidates = std::set<T_Value>;
 
@@ -51,8 +76,40 @@ public:
 
     const auto start = std::cbegin(substr);
     const auto end = start + substr.size();
-    const KeyInternal substr_key(start, end);
-    return find(substr_key);
+    const Range substr_key(start, end);
+
+    const auto candidates_with_position = find_with_position(substr_key);
+
+    // Convert one container into another:
+    for (const auto& kv : candidates_with_position) {
+      result.emplace(kv.second);
+    }
+
+    return result;
+  }
+
+  /**
+   * Like Candidates, but provides the range of the prefix too,
+   * so the caller can know where in the original insert()ed string,
+   * the substring was found. That would refer to the originally-inserted
+   * string, but we already require the caller to keep that alive.
+   */
+  using CandidatesAndPosition = std::vector<std::pair<Range, T_Value>>;
+
+  /** Finds the values for any key containing this substring.
+   */
+  CandidatesAndPosition find_with_position(const T_Key& substr) const {
+    CandidatesAndPosition result;
+
+    if (substr.empty()) {
+      return result;
+    }
+
+
+    const auto start = std::cbegin(substr);
+    const auto end = start + substr.size();
+    const Range substr_key(start, end);
+    return find_with_position(substr_key);
   }
 
   void debug_print() const {
@@ -62,27 +119,9 @@ public:
   }
 
 private:
-  /// Start and end (1 past last position) of a substring in text_;
-  using KeyIterator = typename T_Key::const_iterator;
 
-  class KeyInternal {
-  public:
-    KeyInternal() = default;
 
-    KeyInternal(const KeyIterator& start, const KeyIterator& end)
-    : start_(start), end_(end) {
-      }
-
-    KeyInternal(const KeyInternal& src) = default;
-    KeyInternal& operator=(const KeyInternal& src) = default;
-    KeyInternal(KeyInternal&& src) = default;
-    KeyInternal& operator=(KeyInternal&& src) = default;
-
-    KeyIterator start_;
-    KeyIterator end_;
-  };
-
-  inline static KeyIterator str_end(const KeyInternal& key) {
+  inline static KeyIterator str_end(const Range& key) {
     if (key.global_end_) {
       return *(key.global_end_);
     }
@@ -106,7 +145,7 @@ private:
 
     class Edge {
     public:
-      Edge(const KeyInternal& part, Node* dest)
+      Edge(const Range& part, Node* dest)
         : part_(part),
           dest_(dest) {
         assert(str_size(part));
@@ -117,7 +156,7 @@ private:
       Edge(Edge&& src) = default;
       Edge& operator=(Edge&& src) = default;
 
-      void append_node_to_dest(const KeyInternal& part, const KeyInternal& key, const T_Value& value) {
+      void append_node_to_dest(const Range& part, const Range& key, const T_Value& value) {
         dest_->append_node(part, key, value);
       }
 
@@ -149,23 +188,22 @@ private:
         return extra_node;
       }
 
-      KeyInternal part_;
+      Range part_;
       Node* dest_ = nullptr;
     };
 
-    void append_node(const KeyInternal& part, const KeyInternal& key, const T_Value& value) {
+    void append_node(const Range& part, const Range& key, const T_Value& value) {
       const auto extra_node = new Node();
-      extra_node->keys_.emplace_back(key);
-      extra_node->values_.emplace_back(value);
+      extra_node->keys_and_values_.emplace_back(key, value);
       children_.emplace_back(part, extra_node);
     }
 
-    void append_node(const KeyInternal& part, Node* node) {
+    void append_node(const Range& part, Node* node) {
       children_.emplace_back(part, node);
     }
 
     inline bool has_value() const {
-      return !values_.empty();
+      return !keys_and_values_.empty();
     }
 
     // We could instead have a std::vector<Node*> children_,
@@ -178,17 +216,15 @@ private:
 
     // TODO: Wastes space on non-leaves.
     // TODO: Use a set, though that would not allow duplicates.
-    // The start and end of the actual suffix that this leaf node represents:
-    std::vector<KeyInternal> keys_;
-
-    // The value associated with the string for which this leaf node represents a suffix:
-    std::vector<T_Value> values_;
+    // first: The start and end of the actual suffix that this leaf node represents:
+    // second: The value associated with the string for which this leaf node represents a suffix:
+    std::vector<std::pair<Range, T_Value>> keys_and_values_;
   };
 
-  void insert(const KeyInternal& key, const T_Value& value) {
+  void insert(const Range& key, const T_Value& value) {
     //std::cout << "debug: insert(): key.start_=" << static_cast<const void*>(key.start_) << ", second=" << static_cast<const void*>(key.end_) << std::endl;
     //Insert every suffix of the key:
-    KeyInternal suffix = key;
+    Range suffix = key;
     while(!str_empty(suffix)) {
       //std::cout << "insert(): suffix=" << suffix << ", value=" << value <<std::endl;
       insert_single(suffix, value);
@@ -201,8 +237,8 @@ private:
 
   /** Finds the values for any key containing this substring.
    */
-  std::set<T_Value> find(const KeyInternal& substr) const {
-    std::set<T_Value> result;
+  CandidatesAndPosition find_with_position(const Range& substr) const {
+    CandidatesAndPosition result;
 
     if (str_empty(substr)) {
       return result;
@@ -233,7 +269,8 @@ private:
       const auto node = item.second;
 
       if (node->has_value()) {
-        result.insert(std::cbegin(node->values_), std::cend(node->values_));
+        result.insert(std::end(result), std::cbegin(node->keys_and_values_),
+          std::cend(node->keys_and_values_));
 
         //And continue to examine children, because they can have values too.
       }
@@ -256,7 +293,7 @@ private:
   }
 
   static
-  bool has_prefix(const KeyInternal& str, std::size_t str_start_pos, const KeyInternal& prefix, std::size_t prefix_start_pos = 0) {
+  bool has_prefix(const Range& str, std::size_t str_start_pos, const Range& prefix, std::size_t prefix_start_pos = 0) {
     const auto prefix_start = prefix.start_ + prefix_start_pos;
     const auto prefix_end = prefix.end_;
     const auto iters = std::mismatch(str.start_ + str_start_pos, str.end_,
@@ -265,7 +302,7 @@ private:
   }
 
   static
-  std::size_t common_prefix(const KeyInternal& str, std::size_t str_start_pos, const KeyInternal& prefix, std::size_t prefix_start_pos) {
+  std::size_t common_prefix(const Range& str, std::size_t str_start_pos, const Range& prefix, std::size_t prefix_start_pos) {
     const auto str_start = str.start_ + str_start_pos;
     const auto iters = std::mismatch(str_start, str.end_,
         prefix.start_ + prefix_start_pos, prefix.end_);
@@ -273,7 +310,7 @@ private:
   }
 
 
-  void insert_single(const KeyInternal& key, const T_Value& value) {
+  void insert_single(const Range& key, const T_Value& value) {
     //std::cout << "insert(): key=" << debug_key(key) << std::endl;
     if (str_empty(key)) {
       return;
@@ -337,7 +374,7 @@ private:
 
     if (key_pos == key_size) {
       //The node already exists, so just add the extra value:
-      node->values_.emplace_back(value);
+      node->keys_and_values_.emplace_back(key, value);
       return;
     }
 
@@ -357,7 +394,7 @@ private:
 
   /** Returns the edge and how much of the edge's part represents the @a substr.
    */
-  EdgeMatch find_partial_edge(const KeyInternal& substr) const {
+  EdgeMatch find_partial_edge(const Range& substr) const {
     EdgeMatch result;
 
     if (str_empty(substr)) {
@@ -422,7 +459,7 @@ private:
   }
 
   static
-  inline std::size_t str_size(const KeyInternal& key) {
+  inline std::size_t str_size(const Range& key) {
     if (key.end_ <= key.start_) {
       return 0;
     }
@@ -431,28 +468,28 @@ private:
   }
 
   static
-  inline bool str_empty(const KeyInternal& key) {
+  inline bool str_empty(const Range& key) {
     return key.start_ >= key.end_;
   }
 
   static
-  inline KeyInternal str_substr(const KeyInternal& key, std::size_t start) {
+  inline Range str_substr(const Range& key, std::size_t start) {
     const auto start_used = key.start_ + start;
-    return KeyInternal(
+    return Range(
       (start_used < key.end_) ? start_used : key.end_,
       key.end_);
   }
 
   static
-  inline KeyInternal str_substr(const KeyInternal& key, std::size_t start, std::size_t len) {
+  inline Range str_substr(const Range& key, std::size_t start, std::size_t len) {
     const auto start_used = key.start_ + start;
     const auto end_used = key.start_ + len;
-    return KeyInternal(
+    return Range(
       (start_used < key.end_) ? start_used : key.end_,
       (end_used < key.end_) ? end_used : key.end_);
   }
 
-  static std::string debug_key(const KeyInternal& key) {
+  static std::string debug_key(const Range& key) {
     if (key.end_ <= key.start_) {
       return std::string();
     }
@@ -478,11 +515,11 @@ private:
       if (edge.dest_has_value()) {
         std::cout << "(";
         bool first = true;
-        for (const auto value : edge.dest_->values_) {
+        for (const auto value : edge.dest_->keys_and_values_) {
           if (!first) {
             std::cout << ", ";
           }
-          std::cout << value;
+          std::cout << value.second;
           first = false;
         }
         std::cout << ")";
