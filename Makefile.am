@@ -49,6 +49,7 @@ tests_test_radix_tree_LDADD = \
 
 tests_test_suffix_tree_SOURCES = \
 	murrayc-suffix-tree/suffix_tree.h \
+	murrayc-suffix-tree/range.h \
 	tests/test_suffix_tree.cc
 tests_test_suffix_tree_CXXFLAGS = \
 	$(COMMON_CXXFLAGS)

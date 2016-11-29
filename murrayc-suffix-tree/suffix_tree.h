@@ -1,6 +1,7 @@
 #ifndef MURRAYC_SUFFIX_TREE_SUFFIX_TREE_H
 #define MURRAYC_SUFFIX_TREE_SUFFIX_TREE_H
 
+#include "iter_range.h"
 #include <iostream>
 #include <unordered_map>
 #include <unordered_set>
@@ -23,7 +24,7 @@ public:
   void insert(const T_Key& key, const T_Value& value) {
     const auto start = std::cbegin(key);
     const auto end = std::next(start, key.size());
-    const KeyInternal substr(start, end);
+    const Range substr(start, end);
     if (str_empty(substr)) {
       return;
     }
@@ -33,7 +34,7 @@ public:
 
   /*
   void insert(const typename T_Key::const_iterator& start, const typename T_Key::const_iterator& end, const T_Value& value) {
-    const KeyInternal substr(start, end);
+    const Range substr(start, end);
     if (str_empty(substr)) {
       return;
     }
@@ -53,7 +54,7 @@ public:
       return result;
     }
 
-    const KeyInternal substr_key(std::cbegin(substr), std::cend(substr));
+    const Range substr_key(std::cbegin(substr), std::cend(substr));
     return find(substr_key);
   }
 
@@ -66,31 +67,9 @@ public:
 private:
   /// Start and end (1 past last position) of a substring in text_;
   using KeyIterator = typename T_Key::const_iterator;
+  using Range = IterRange<KeyIterator>;
 
-  class KeyInternal {
-  public:
-    KeyInternal() = default;
-
-    KeyInternal(const KeyIterator& start, const KeyIterator& end)
-    : start_(start), end_(end) {
-    }
-
-    KeyInternal(const KeyIterator& start, const std::shared_ptr<const KeyIterator>& end)
-    : start_(start),
-      global_end_(end) {
-    }
-
-    KeyInternal(const KeyInternal& src) = default;
-    KeyInternal& operator=(const KeyInternal& src) = default;
-    KeyInternal(KeyInternal&& src) = default;
-    KeyInternal& operator=(KeyInternal&& src) = default;
-
-    KeyIterator start_;
-    KeyIterator end_;
-    std::shared_ptr<const KeyIterator> global_end_;
-  };
-
-  inline static KeyIterator str_end(const KeyInternal& key) {
+  inline static KeyIterator str_end(const Range& key) {
     if (key.global_end_) {
       return *(key.global_end_);
     }
@@ -114,7 +93,7 @@ private:
 
     class Edge {
     public:
-      Edge(const KeyInternal& part, Node* dest)
+      Edge(const Range& part, Node* dest)
         : part_(part),
           dest_(dest) {
         //assert(str_size(part));
@@ -141,7 +120,7 @@ private:
         return dest_->has_value();
       }
 
-      void append_node_to_dest(const KeyInternal& part, const T_Value& value) {
+      void append_node_to_dest(const Range& part, const T_Value& value) {
         dest_->append_node(part, value);
       }
 
@@ -165,22 +144,22 @@ private:
         return extra_node;
       }
 
-      KeyInternal part_;
+      Range part_;
       Node* dest_ = nullptr;
     };
 
-    void append_node(const KeyInternal& part, const T_Value& value) {
+    void append_node(const Range& part, const T_Value& value) {
       const auto extra_node = new Node();
       extra_node->values_.emplace(value);
       children_.emplace_back(part, extra_node);
     }
 
-    void append_node(const KeyInternal& part) {
+    void append_node(const Range& part) {
       const auto extra_node = new Node();
       children_.emplace_back(part, extra_node);
     }
 
-    void append_node(const KeyInternal& part, Node* node) {
+    void append_node(const Range& part, Node* node) {
       // A debug assert:
       const auto iter = std::find_if(std::cbegin(children_), std::cend(children_),
         [node](const auto& edge) {
@@ -220,7 +199,7 @@ private:
     std::size_t length = 0;
   };
 
-  void insert_ukkonen(const KeyInternal& key, const T_Value& value) {
+  void insert_ukkonen(const Range& key, const T_Value& value) {
     //std::cout << "insert_ukkonen(): " << debug_key(key) << std::endl;
 
     // Use Ukkonen's algorithm for suffix tree construction:
@@ -271,7 +250,7 @@ private:
         const auto part_len_used = edge_match.edge_part_used_;
 
         if ((!edge_match.char_found_ || is_last_char)) {
-          KeyInternal prefix(i, end_ptr);
+          Range prefix(i, end_ptr);
 
           // Rule 2 extension: There is no match:
           if (part_len_used == 0) {
@@ -346,7 +325,7 @@ private:
 
   /** Finds the values for any key containing this substring.
    */
-  std::set<T_Value> find(const KeyInternal& substr) const {
+  std::set<T_Value> find(const Range& substr) const {
     std::set<T_Value> result;
 
     if (str_empty(substr)) {
@@ -393,7 +372,7 @@ private:
   }
 
   static
-  bool has_prefix(const KeyInternal& str, std::size_t str_start_pos, const KeyInternal& prefix, std::size_t prefix_start_pos = 0) {
+  bool has_prefix(const Range& str, std::size_t str_start_pos, const Range& prefix, std::size_t prefix_start_pos = 0) {
     const auto prefix_start = std::next(prefix.start_, prefix_start_pos);
     const auto prefix_end = str_end(prefix);
     const auto iters = std::mismatch(std::next(str.start_, str_start_pos), str_end(str),
@@ -499,7 +478,7 @@ private:
   }
 
   static
-  inline std::size_t str_size(const KeyInternal& key, std::size_t key_pos = 0) {
+  inline std::size_t str_size(const Range& key, std::size_t key_pos = 0) {
     const auto start = std::next(key.start_, key_pos);
     const auto end = str_end(key);
     if (end <= start) {
@@ -510,15 +489,15 @@ private:
   }
 
   static
-  inline bool str_empty(const KeyInternal& key) {
+  inline bool str_empty(const Range& key) {
     return key.start_ >= str_end(key);
   }
 
   static
-  inline KeyInternal str_substr(const KeyInternal& key, std::size_t start) {
+  inline Range str_substr(const Range& key, std::size_t start) {
     const auto start_used = std::next(key.start_, start);
     const auto key_end = str_end(key);
-    auto result= KeyInternal(
+    auto result= Range(
       (start_used < key_end) ? start_used : key_end,
       key_end);
 
@@ -532,16 +511,16 @@ private:
   }
 
   static
-  inline KeyInternal str_substr(const KeyInternal& key, std::size_t start, std::size_t len) {
+  inline Range str_substr(const Range& key, std::size_t start, std::size_t len) {
     const auto start_used = std::next(key.start_, start);
     const auto end_used = std::next(key.start_, len);
     const auto key_end = str_end(key);
-    return KeyInternal(
+    return Range(
       (start_used < key_end) ? start_used : key_end,
       (end_used < key_end) ? end_used : key_end);
   }
 
-  static std::string debug_key(const KeyInternal& key, std::size_t pos) {
+  static std::string debug_key(const Range& key, std::size_t pos) {
     const auto key_start = std::next(key.start_, pos);
     const auto key_end = str_end(key);
     if (key_end <= key_start) {
@@ -551,7 +530,7 @@ private:
     return std::string(key_start, key_end);
   }
 
-  static std::string debug_key(const KeyInternal& key) {
+  static std::string debug_key(const Range& key) {
     return debug_key(key, 0);
   }
 
