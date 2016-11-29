@@ -1,6 +1,7 @@
 #ifndef MURRAYC_SUFFIX_TREE_SUFFIX_TREE_H
 #define MURRAYC_SUFFIX_TREE_SUFFIX_TREE_H
 
+#include "iter_range.h"
 #include <algorithm>
 #include <iostream>
 #include <vector>
@@ -41,27 +42,7 @@ public:
   /// Start and end (1 past last position) of a substring in text_;
   using KeyIterator = typename T_Key::const_iterator;
 
-  class Range {
-  public:
-    Range() = default;
-
-    Range(const KeyIterator& start, const KeyIterator& end)
-    : start_(start), end_(end) {
-      }
-
-    Range(const Range& src) = default;
-    Range& operator=(const Range& src) = default;
-    Range(Range&& src) = default;
-    Range& operator=(Range&& src) = default;
-
-    bool operator==(const Range& src) const {
-      return start_ == src.start_ &&
-        end_ == src.end_;
-    }
-
-    KeyIterator start_;
-    KeyIterator end_;
-  };
+  using Range = IterRange<KeyIterator>;
 
   using Candidates = std::set<T_Value>;
 
