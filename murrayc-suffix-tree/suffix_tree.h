@@ -106,11 +106,11 @@ public:
    */
   using suffixes_type = std::vector<std::pair<Range, T_Value>>;
 
-  suffixes_type get_suffix_array() {
+  suffixes_type get_suffix_array() const {
     // Build a suffix array by doing a lexographically-ordered DFS:
     suffixes_type result;
 
-    std::stack<Node*> s;
+    std::stack<const Node*> s;
     s.emplace(&root_);
     while (!s.empty()) {
       auto node = s.top();
