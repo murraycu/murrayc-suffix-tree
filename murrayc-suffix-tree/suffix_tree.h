@@ -117,8 +117,8 @@ private:
       Edge(Edge&& src) = default;
       Edge& operator=(Edge&& src) = default;
 
-      void append_node_to_dest(const KeyInternal& part, const T_Value& value) {
-        dest_->append_node(part, value);
+      void append_node_to_dest(const KeyInternal& part, const KeyInternal& key, const T_Value& value) {
+        dest_->append_node(part, key, value);
       }
 
       inline bool dest_has_value() const {
@@ -153,8 +153,9 @@ private:
       Node* dest_ = nullptr;
     };
 
-    void append_node(const KeyInternal& part, const T_Value& value) {
+    void append_node(const KeyInternal& part, const KeyInternal& key, const T_Value& value) {
       const auto extra_node = new Node();
+      extra_node->keys_.emplace_back(key);
       extra_node->values_.emplace_back(value);
       children_.emplace_back(part, extra_node);
     }
@@ -177,6 +178,10 @@ private:
 
     // TODO: Wastes space on non-leaves.
     // TODO: Use a set, though that would not allow duplicates.
+    // The start and end of the actual suffix that this leaf node represents:
+    std::vector<KeyInternal> keys_;
+
+    // The value associated with the string for which this leaf node represents a suffix:
     std::vector<T_Value> values_;
   };
 
@@ -340,7 +345,7 @@ private:
     const auto suffix = str_substr(key, key_pos);
     //std::cout << "Adding suffix: " << suffix << ", with value: " << value << '\n';
 
-    node->append_node(suffix, value);
+    node->append_node(suffix, key, value);
   }
 
   /**
