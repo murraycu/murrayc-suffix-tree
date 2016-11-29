@@ -263,9 +263,16 @@ test_get_suffix_array() {
   const std::string str = "bananabanana";
   suffix_tree.insert(str, 0);
 
-  const auto sa = suffix_tree.get_suffix_array();
+  const auto sa_and_lcp = suffix_tree.get_suffix_array_and_lcp();
+  const auto& sa = sa_and_lcp.first;
+  const auto& lcp = sa_and_lcp.second;
   std::cout << "Suffix array size: " << sa.size() << std::endl;
   assert(sa.size() == 12);
+  assert(lcp.size() == 11);
+
+  const std::vector<std::size_t> expected_lcp = {1, 1, 3, 3, 5, 0, 6, 0, 2, 2, 4};
+  assert(lcp == expected_lcp);
+
   for (const auto p : sa) {
     const auto& range = p.first;
     const auto& value = p.second;

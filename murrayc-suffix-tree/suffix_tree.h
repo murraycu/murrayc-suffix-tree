@@ -105,20 +105,43 @@ public:
    * The suffix's begin/end, and the associated value.
    */
   using suffixes_type = std::vector<std::pair<Range, T_Value>>;
+  using lcp_type = std::vector<std::size_t>;
 
-  suffixes_type get_suffix_array() const {
+  /** Get the suffix array and the LCP array.
+   * The LCP array is the length of the common prefix of an item compared to the previous
+   * item in the suffix array. Therefore there is no LCP value for the first suffix in the
+   * suffix array.
+   */
+  std::pair<suffixes_type, lcp_type>
+  get_suffix_array_and_lcp() const {
     // Build a suffix array by doing a lexographically-ordered DFS:
-    suffixes_type result;
+    suffixes_type suffixes;
+    lcp_type lcp;
 
-    std::stack<const Node*> s;
-    s.emplace(&root_);
+    // The node and its ancestor:
+    std::stack<std::pair<const Node*, path_type>> s;
+    s.emplace(&root_, path_type());
+    path_type previous_path;
     while (!s.empty()) {
-      auto node = s.top();
+      const auto node_and_ancestor = s.top();
       s.pop();
+      const auto& node = node_and_ancestor.first;
+      const auto path = node_and_ancestor.second;
+      const std::size_t depth = path.empty() ? 0 : path.back().second;
 
       if (node->has_value()) {
         for (auto& kv : node->keys_and_values_) {
-          result.emplace_back(kv.first, kv.second);
+          suffixes.emplace_back(kv.first, kv.second);
+          if (!previous_path.empty()) {
+            // TODO: Just calling std::mismatch() on the strings would be much simpler,
+            // and would be just as linear (O(h), where h is the height of the tree).
+            // Is it worth keeping these paths in the stack, just to
+            // avoid a few extra character compares?
+            const auto common_depth = depth_of_lca(previous_path, path);
+            //std::cout << "lcp: " << common_depth << std::endl;
+            lcp.emplace_back(common_depth);
+          }
+          previous_path = path;
         }
       }
 
@@ -135,15 +158,18 @@ public:
         });
 
       for (auto edge : children) {
-        //const auto& edge_part = edge.part_;
+        const auto& edge_part = edge.part_;
         const auto& d = edge.dest_;
-        s.emplace(d);
+
+        auto new_path = path;
+        const auto substr_len = str_size(edge_part);
+        new_path.emplace_back(d, depth + substr_len);
+        s.emplace(d, new_path);
       }
     }
 
-    return result;
+    return std::make_pair(suffixes, lcp);
   }
-
 
 private:
 
@@ -555,6 +581,28 @@ private:
 
       debug_print(edge.dest_, indent + str_size(edge.part_));
     }
+  }
+
+  using node_and_depth_type = std::pair<const Node*, std::size_t>;
+  using path_type = std::vector<node_and_depth_type>;
+
+  static std::size_t
+  depth_of_lca(const path_type& a, const path_type& b) {
+    // Find the first mismatching nodes in the paths:
+    const auto p = std::mismatch(std::cbegin(a), std::cend(a),
+      std::cbegin(b), std::cend(b));
+    if (p.first == std::cend(a)) {
+      assert("No common ancestor");
+    }
+
+    if (p.first == std::cbegin(a)) {
+      return 0;
+    }
+
+    // Get the node just before the mismatch:
+    auto iter = p.first;
+    iter--;
+    return iter->second;
   }
 
   Node root_;
