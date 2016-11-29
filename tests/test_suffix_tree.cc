@@ -157,7 +157,7 @@ void test_full_text_index_one_string() {
 }
 
 static
-void test_simple_single_with_position() {
+void test_simple_single_with_positions() {
   using Tree = SuffixTree<std::string, std::size_t>;
   Tree suffix_tree;
 
@@ -165,24 +165,24 @@ void test_simple_single_with_position() {
   suffix_tree.insert(str, 0);
 
   {
-    auto results = suffix_tree.find_with_position("bob");
+    auto results = suffix_tree.find_with_positions("bob");
     std::cout << "results.size(): " << results.size() << std::endl;
     assert(results.size() == 0);
   }
 
   {
-    auto results = suffix_tree.find_with_position("an");
+    auto results = suffix_tree.find_with_positions("an");
     std::cout << "results.size(): " << results.size() << std::endl;
     assert(results.size() == 0);
   }
 
   {
-    auto results = suffix_tree.find_with_position("zx");
+    auto results = suffix_tree.find_with_positions("zx");
     std::cout << "results.size(): " << results.size() << std::endl;
     assert(results.size() == 1);
 
     const Tree::Range expected_range(std::cbegin(str) + 2, std::cend(str));
-    const Tree::CandidatesAndPosition expected = {{expected_range, 0}};
+    const Tree::CandidatesWithPositions expected = {{expected_range, 0}};
     assert(results == expected);
     for (const auto& result : results) {
       const auto& range = result.first;
@@ -194,14 +194,14 @@ void test_simple_single_with_position() {
 }
 
 static
-void test_simple_multiple_with_position() {
+void test_simple_multiple_with_positions() {
   using Tree = SuffixTree<std::string, std::size_t>;
   Tree suffix_tree;
 
   // We keep the strings alive,
   // and just pass a reference,
   // so we can use the iterators that will
-  // be returned by find_with_position()
+  // be returned by find_with_positions()
   const std::string str1 = "banana";
   suffix_tree.insert(str1, 0);
   const std::string str2 = "bandana";
@@ -212,11 +212,11 @@ void test_simple_multiple_with_position() {
   suffix_tree.insert(str4, 3);
 
   {
-    const auto results = suffix_tree.find_with_position("an");
+    const auto results = suffix_tree.find_with_positions("an");
     std::cout << "results.size(): " << results.size() << std::endl;
     assert(results.size() == 4);
     // TODO: Don't test the order:
-    const Tree::CandidatesAndPosition expected = {
+    const Tree::CandidatesWithPositions expected = {
       {Tree::Range(std::cbegin(str2) + 1, std::cend(str2)), 1},
       {Tree::Range(std::cbegin(str1) + 3, std::cend(str1)), 0},
       {Tree::Range(std::cbegin(str2) + 4, std::cend(str2)), 1},
@@ -233,10 +233,10 @@ void test_simple_multiple_with_position() {
   }
 
   {
-    const auto results = suffix_tree.find_with_position("bar");
+    const auto results = suffix_tree.find_with_positions("bar");
     std::cout << "results.size(): " << results.size() << std::endl;
     assert(results.size() == 2);
-    const Tree::CandidatesAndPosition expected = {
+    const Tree::CandidatesWithPositions expected = {
       {Tree::Range(std::cbegin(str3) + 0, std::cend(str3)), 2},
       {Tree::Range(std::cbegin(str4) + 3, std::cend(str4)), 3}
     };
@@ -293,8 +293,8 @@ int main() {
   test_full_text_index_individual_strings();
   test_full_text_index_one_string();
 
-  test_simple_single_with_position();
-  test_simple_multiple_with_position();
+  test_simple_single_with_positions();
+  test_simple_multiple_with_positions();
 
   test_get_suffix_array();
 

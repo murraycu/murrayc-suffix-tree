@@ -79,10 +79,10 @@ public:
     const auto end = start + substr.size();
     const Range substr_key(start, end);
 
-    const auto candidates_with_position = find_with_position(substr_key);
+    const auto candidates_with_positions = find_with_positions(substr_key);
 
     // Convert one container into another:
-    for (const auto& kv : candidates_with_position) {
+    for (const auto& kv : candidates_with_positions) {
       result.emplace(kv.second);
     }
 
@@ -95,12 +95,12 @@ public:
    * the substring was found. That would refer to the originally-inserted
    * string, but we already require the caller to keep that alive.
    */
-  using CandidatesAndPosition = std::vector<std::pair<Range, T_Value>>;
+  using CandidatesWithPositions = std::vector<std::pair<Range, T_Value>>;
 
   /** Finds the values for any key containing this substring.
    */
-  CandidatesAndPosition find_with_position(const T_Key& substr) const {
-    CandidatesAndPosition result;
+  CandidatesWithPositions find_with_positions(const T_Key& substr) const {
+    CandidatesWithPositions result;
 
     if (substr.empty()) {
       return result;
@@ -110,7 +110,7 @@ public:
     const auto start = std::cbegin(substr);
     const auto end = start + substr.size();
     const Range substr_key(start, end);
-    return find_with_position(substr_key);
+    return find_with_positions(substr_key);
   }
 
   void debug_print() const {
@@ -283,8 +283,8 @@ private:
 
   /** Finds the values for any key containing this substring.
    */
-  CandidatesAndPosition find_with_position(const Range& substr) const {
-    CandidatesAndPosition result;
+  CandidatesWithPositions find_with_positions(const Range& substr) const {
+    CandidatesWithPositions result;
 
     if (str_empty(substr)) {
       return result;
