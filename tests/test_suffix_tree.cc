@@ -263,7 +263,7 @@ test_get_suffix_array() {
   const std::string str = "bananabanana";
   suffix_tree.insert(str, 0);
 
-  const auto sa_and_lcp = suffix_tree.get_suffix_array_and_lcp();
+  const auto sa_and_lcp = suffix_tree.get_suffix_array_and_lcp_array();
   const auto& sa = sa_and_lcp.first;
   const auto& lcp = sa_and_lcp.second;
   std::cout << "Suffix array size: " << sa.size() << std::endl;
@@ -294,7 +294,7 @@ test_get_suffix_array() {
 }
 
 static void
-test_create_from_suffix_array_and_lcp() {
+test_create_from_suffix_array_and_lcp_array() {
   using Tree = SuffixTree<std::string, std::size_t>;
   Tree suffix_tree1;
 
@@ -305,7 +305,7 @@ test_create_from_suffix_array_and_lcp() {
   const std::string str = "xyzxyaxyz";
   suffix_tree1.insert(str, 0);
 
-  const auto sa_and_lcp = suffix_tree1.get_suffix_array_and_lcp();
+  const auto sa_and_lcp = suffix_tree1.get_suffix_array_and_lcp_array();
   const auto& sa = sa_and_lcp.first;
   const auto& lcp = sa_and_lcp.second;
 
@@ -339,7 +339,7 @@ int main() {
   test_simple_multiple_with_positions();
 
   test_get_suffix_array();
-  test_create_from_suffix_array_and_lcp();
+  test_create_from_suffix_array_and_lcp_array();
 
   return EXIT_SUCCESS;
 }

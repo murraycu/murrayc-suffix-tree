@@ -24,13 +24,13 @@ public:
 
   using Range = IterRange<KeyIterator>;
 
-  using suffixes_type = std::vector<std::pair<Range, T_Value>>;
-  using lcp_type = std::vector<std::size_t>;
+  using suffix_array_type = std::vector<std::pair<Range, T_Value>>;
+  using lcp_array_type = std::vector<std::size_t>;
 
   /**
    * The suffix's begin/end, and the associated value.
    */
-  SuffixTree(const suffixes_type& suffixes, const lcp_type& lcp_array) {
+  SuffixTree(const suffix_array_type& suffixes, const lcp_array_type& lcp_array) {
     if (suffixes.empty()) {
       return;
     }
@@ -187,11 +187,11 @@ public:
    * item in the suffix array. Therefore there is no LCP value for the first suffix in the
    * suffix array.
    */
-  std::pair<suffixes_type, lcp_type>
-  get_suffix_array_and_lcp() const {
+  std::pair<suffix_array_type, lcp_array_type>
+  get_suffix_array_and_lcp_array() const {
     // Build a suffix array by doing a lexographically-ordered DFS:
-    suffixes_type suffixes;
-    lcp_type lcp;
+    suffix_array_type suffixes;
+    lcp_array_type lcp;
 
     // The node and its ancestor:
     std::stack<std::pair<const Node*, path_type>> s;
