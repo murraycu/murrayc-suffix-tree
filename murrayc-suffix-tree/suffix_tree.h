@@ -393,6 +393,9 @@ private:
   };
 
   void insert_ukkonen(const Range& key, const T_Value& value) {
+    // This code won't work unless the tree is empty:
+    assert(root_.children_.empty());
+
     //std::cout << "insert_ukkonen(): " << debug_key(key) << std::endl;
 
     // Use Ukkonen's algorithm for suffix tree construction:
@@ -549,6 +552,9 @@ private:
 
   void insert_sa_and_lcp_array(const suffix_array_type& suffixes, const lcp_array_type& lcp_array) {
     assert(suffixes.size() == lcp_array.size() + 1);
+
+    // This code won't work unless the tree is empty:
+    assert(root_.children_.empty());
 
     // Add the first suffix, then subsequent suffixes,
     // keeping the path to the currently-added leaf node,
