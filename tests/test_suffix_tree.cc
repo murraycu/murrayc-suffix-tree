@@ -69,7 +69,12 @@ void test_simple_multiple() {
 static
 void test_full_text_index_individual_strings() {
   std::ifstream in;
-  in.open("tests/test_pg1400.txt");
+
+  const auto filepath = MURRAYC_SUFFIX_TREE_TESTS_DIR "test_pg1400.txt";
+  in.open(filepath);
+  if (!in.is_open()) {
+    std::cerr << "Could not open file: " << filepath << std::endl;
+  }
   assert(in.is_open());
 
   // The actual strings are stored outside of the SuffixTree,
@@ -111,8 +116,14 @@ void test_full_text_index_one_string() {
   // Load the whole text file into one std::string.
   std::string str;
   std::ifstream in;
-  in.open("tests/test_pg1400.txt");
+
+  const auto filepath = MURRAYC_SUFFIX_TREE_TESTS_DIR "test_pg1400.txt";
+  in.open(filepath);
+  if (!in.is_open()) {
+    std::cerr << "Could not open file: " << filepath << std::endl;
+  }
   assert(in.is_open());
+
   in.seekg(0, std::ios::end);
   str.resize(in.tellg());
   in.seekg(0, std::ios::beg);

@@ -11,7 +11,7 @@ DISTCHECK_CONFIGURE_FLAGS = --enable-warnings=fatal --disable-update-mime-databa
 pkgconfigdir = $(libdir)/pkgconfig
 nodist_pkgconfig_DATA = $(MURRAYC_SUFFIX_TREE_MODULE_NAME).pc
 
-AM_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir) 
+AM_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir)
 
 COMMON_CXXFLAGS = $(PROJECT_CFLAGS) \
   $(PROJECT_WXXFLAGS) \
@@ -52,6 +52,9 @@ tests_test_suffix_tree_SOURCES = \
 	murrayc-suffix-tree/iter_range.h \
 	tests/test_suffix_tree.cc
 tests_test_suffix_tree_CXXFLAGS = \
-	$(COMMON_CXXFLAGS)
+	$(COMMON_CXXFLAGS) \
+	-DMURRAYC_SUFFIX_TREE_TESTS_DIR=\""$(abs_top_srcdir)/tests/"\"
 tests_test_suffix_tree_LDADD = \
 	$(COMMON_LIBS)
+
+EXTRA_DIST = tests/test_pg1400.txt
