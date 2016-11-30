@@ -247,15 +247,6 @@ public:
 
 private:
 
-
-  inline static KeyIterator str_end(const Range& key) {
-    if (key.global_end_) {
-      return *(key.global_end_);
-    }
-
-    return key.end_;
-  }
-
   class Node {
   public:
     Node() = default;
