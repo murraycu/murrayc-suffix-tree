@@ -58,3 +58,6 @@ tests_test_suffix_tree_LDADD = \
 	$(COMMON_LIBS)
 
 EXTRA_DIST = tests/test_pg1400.txt
+
+# TODO: We shouldn't have to mention this:
+DISTCLEANFILES = stamp-h2
