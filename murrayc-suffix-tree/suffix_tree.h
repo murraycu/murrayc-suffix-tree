@@ -43,80 +43,15 @@ public:
 
   using lcp_array_type = std::vector<std::size_t>;
 
+  /**
+   * Construct a suffix tree based on a suffix array and LCP array.
+   */
   SuffixTree(const suffix_array_type& suffixes, const lcp_array_type& lcp_array) {
     if (suffixes.empty()) {
       return;
     }
 
-    assert(suffixes.size() == lcp_array.size() + 1);
-
-    // Add the first suffix, then subsequent suffixes,
-    // keeping the path to the currently-added leaf node,
-    // so we can travel back up it when creating the next leaf node,
-    // to split at the specified lcp.
-
-    // The parent nodes and their depths:
-    std::stack<std::pair<Node*, std::size_t>> path;
-
-    // Add the first suffix:
-    auto i = std::cbegin(suffixes);
-    {
-      const auto& suffix = i->first;
-      const auto& value = i->second;
-      root_.append_node(suffix, suffix /* key */, value);
-      path.emplace(std::make_pair(&root_, 0));
-    }
-
-    auto l = std::cbegin(lcp_array);
-    for (++i; i != std::cend(suffixes); ++i, ++l) {
-      const auto& suffix = i->first;
-
-      const auto& value = i->second;
-      const auto lcp = *l;
-      //std::cout << debug_key(suffix) << ": lcp=" << lcp << std::endl;
-
-      // Find the parent node at, or higher than, the lcp:
-      Node* parent = nullptr;
-      std::size_t depth = 0;
-      while (!path.empty()) {
-        const auto p = path.top();
-        parent = p.first;
-        depth = p.second;
-        if (depth <= lcp) {
-          // Use it, without popping it:
-          break;
-        }
-
-        path.pop();
-      }
-
-      // Split if necessary:
-      const auto suffix_part = str_substr(suffix, lcp);
-      Node* node = nullptr;
-      if (depth == lcp) {
-        // Just add the end of the suffix to the parent node:
-        node = parent->append_node(suffix_part, suffix /* key */, value);
-      } else {
-        // Split the parent node's edge at the appropriate place,
-        // and add the new node from the split:
-        const auto iter = suffix.start_ + depth;
-        auto edge = parent->find_edge_starting_with(iter);
-        /*
-        if (!edge) {
-          std::cerr << "Cannot find edge beginning with " << *iter
-            << " from node with depth: " << depth << std::endl;
-        }
-        */
-        assert(edge);
-
-        // Split it:
-        const auto split_node = edge->split(lcp - depth);
-        path.emplace(std::make_pair(split_node, lcp));
-        node = split_node->append_node(suffix_part, suffix /* key */, value);
-      }
-
-      path.emplace(std::make_pair(node, str_size(suffix)));
-    }
+    insert_sa_and_lcp_array(suffixes, lcp_array);
   }
 
   void insert(const T_Key& key, const T_Value& value) {
@@ -609,6 +544,78 @@ private:
         e.part_.set_end_from_global();
         s.emplace(e.dest_);
       }
+    }
+  }
+
+  void insert_sa_and_lcp_array(const suffix_array_type& suffixes, const lcp_array_type& lcp_array) {
+    assert(suffixes.size() == lcp_array.size() + 1);
+
+    // Add the first suffix, then subsequent suffixes,
+    // keeping the path to the currently-added leaf node,
+    // so we can travel back up it when creating the next leaf node,
+    // to split at the specified lcp.
+
+    // The parent nodes and their depths:
+    std::stack<std::pair<Node*, std::size_t>> path;
+
+    // Add the first suffix:
+    auto i = std::cbegin(suffixes);
+    {
+      const auto& suffix = i->first;
+      const auto& value = i->second;
+      root_.append_node(suffix, suffix /* key */, value);
+      path.emplace(std::make_pair(&root_, 0));
+    }
+
+    auto l = std::cbegin(lcp_array);
+    for (++i; i != std::cend(suffixes); ++i, ++l) {
+      const auto& suffix = i->first;
+
+      const auto& value = i->second;
+      const auto lcp = *l;
+      //std::cout << debug_key(suffix) << ": lcp=" << lcp << std::endl;
+
+      // Find the parent node at, or higher than, the lcp:
+      Node* parent = nullptr;
+      std::size_t depth = 0;
+      while (!path.empty()) {
+        const auto p = path.top();
+        parent = p.first;
+        depth = p.second;
+        if (depth <= lcp) {
+          // Use it, without popping it:
+          break;
+        }
+
+        path.pop();
+      }
+
+      // Split if necessary:
+      const auto suffix_part = str_substr(suffix, lcp);
+      Node* node = nullptr;
+      if (depth == lcp) {
+        // Just add the end of the suffix to the parent node:
+        node = parent->append_node(suffix_part, suffix /* key */, value);
+      } else {
+        // Split the parent node's edge at the appropriate place,
+        // and add the new node from the split:
+        const auto iter = suffix.start_ + depth;
+        auto edge = parent->find_edge_starting_with(iter);
+        /*
+        if (!edge) {
+          std::cerr << "Cannot find edge beginning with " << *iter
+            << " from node with depth: " << depth << std::endl;
+        }
+        */
+        assert(edge);
+
+        // Split it:
+        const auto split_node = edge->split(lcp - depth);
+        path.emplace(std::make_pair(split_node, lcp));
+        node = split_node->append_node(suffix_part, suffix /* key */, value);
+      }
+
+      path.emplace(std::make_pair(node, str_size(suffix)));
     }
   }
 
