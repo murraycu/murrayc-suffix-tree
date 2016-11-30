@@ -23,12 +23,13 @@ public:
 
   using Range = IterRange<KeyIterator>;
 
-  using suffix_array_type = std::vector<std::pair<Range, T_Value>>;
-  using lcp_array_type = std::vector<std::size_t>;
-
   /**
    * The suffix's begin/end, and the associated value.
    */
+  using suffix_array_type = std::vector<std::pair<Range, T_Value>>;
+
+  using lcp_array_type = std::vector<std::size_t>;
+
   SuffixTree(const suffix_array_type& suffixes, const lcp_array_type& lcp_array) {
     if (suffixes.empty()) {
       return;
