@@ -21,10 +21,44 @@ public:
   IterRange(IterRange&& src) = default;
   IterRange& operator=(IterRange&& src) = default;
 
+  /*
+  static char
+  debug_global_end(const std::shared_ptr<const T_Iterator>& end) {
+    if (!end) {
+      return '!';
+    }
+
+    T_Iterator iter = *end;
+    return (iter == T_Iterator() ? '?' : *iter);
+  }
+  */
+
   bool operator==(const IterRange& src) const {
     return start_ == src.start_ &&
       end_ == src.end_ &&
       global_end_ == src.global_end_;
+  }
+
+  /** Make sure that the range has its own fixed end value,
+   * instead of sharing a variable end value.
+   */
+  void set_end_from_global() {
+    if (!global_end_) {
+      end_ = T_Iterator();
+      return;
+    }
+
+    end_ = *global_end_;
+
+    global_end_.reset();
+  }
+
+  std::string to_string() const {
+    if (global_end_) {
+      return std::string(start_, *global_end_);
+    } else {
+      return std::string(start_, end_);
+    }
   }
 
   T_Iterator start_;

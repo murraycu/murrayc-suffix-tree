@@ -8,6 +8,11 @@
 #include <boost/timer/timer.hpp>
 
 static
+bool starts_with(const std::string& a, const std::string& b) {
+  return a.compare(0, b.size(), b) == 0;
+}
+
+static
 void test_simple_single() {
   using Tree = SuffixTree<std::string, std::size_t>;
   Tree suffix_tree;
@@ -228,7 +233,7 @@ void test_simple_multiple_with_positions() {
       const auto& range = result.first;
       const auto& value = result.second;
       //std::cout << std::distance(std::cbegin(str), range.start_) << ": "
-      std::cout << std::string(range.start_, range.end_) << ": " << value << std::endl;
+      std::cout << range.to_string() << ": " << value << std::endl;
     }
   }
 
@@ -248,6 +253,62 @@ void test_simple_multiple_with_positions() {
       //std::cout << std::distance(std::cbegin(str), range.start_) << ": "
       std::cout << std::string(range.start_, range.end_) << ": " << value << std::endl;
     }
+  }
+}
+
+/** Test linear-time creation with Ukkonen's algorithm,
+ * via the constructor.
+ */
+static
+void test_simple_single_construction() {
+  using Tree = SuffixTree<std::string, std::size_t>;
+
+  std::string str = "xyzxyaxyz";
+  Tree suffix_tree(str, 0);
+
+  {
+    auto results = suffix_tree.find("bob");
+    std::cout << "results.size(): " << results.size() << std::endl;
+    assert(results.size() == 0);
+  }
+
+  {
+    auto results = suffix_tree.find("an");
+    std::cout << "results.size(): " << results.size() << std::endl;
+    assert(results.size() == 0);
+  }
+
+  {
+    auto results = suffix_tree.find("zx");
+    std::cout << "results.size(): " << results.size() << std::endl;
+    assert(results.size() == 1);
+    assert(results == Tree::Candidates({0}));
+    for (const auto& result : results) {
+      std::cout << result << ": " << std::endl;
+    }
+  }
+
+  {
+    const std::string KEY = "xy";
+    auto results = suffix_tree.find_with_positions(KEY);
+    std::cout << "results.size(): " << results.size() << std::endl;
+    assert(results.size() == 3);
+    //TODO: Don't check the order:
+    const Tree::CandidatesWithPositions expected = {
+      {Tree::Range(std::cbegin(str) + 3, std::cend(str)), 0},
+      {Tree::Range(std::cbegin(str) + 6, std::cend(str)), 0},
+      {Tree::Range(std::cbegin(str) + 0, std::cend(str)), 0}
+    };
+    for (const auto& result : results) {
+      const auto& range = result.first;
+      const auto& value = result.second;
+      const auto result_str = range.to_string();
+
+      std::cout << std::distance(std::cbegin(str), range.start_) << ": "
+        << result_str << ": " << value << std::endl;
+      assert(starts_with(result_str, KEY));
+    }
+    assert(results == expected);
   }
 }
 
@@ -312,7 +373,8 @@ test_create_from_suffix_array_and_lcp_array() {
   Tree suffix_tree2(sa, lcp);
 
   {
-    auto results = suffix_tree2.find_with_positions("zx");
+    const std::string KEY = "zx";
+    auto results = suffix_tree2.find_with_positions(KEY);
     std::cout << "results.size(): " << results.size() << std::endl;
     assert(results.size() == 1);
 
@@ -322,8 +384,11 @@ test_create_from_suffix_array_and_lcp_array() {
     for (const auto& result : results) {
       const auto& range = result.first;
       const auto& value = result.second;
+      const auto result_str = range.to_string();
+      assert(starts_with(result_str, KEY));
+
       std::cout << std::distance(std::cbegin(str), range.start_) << ": "
-        << std::string(range.start_, range.end_) << ": " << value << std::endl;
+        << result_str << ": " << value << std::endl;
     }
   }
 }
@@ -337,6 +402,8 @@ int main() {
 
   test_simple_single_with_positions();
   test_simple_multiple_with_positions();
+
+  test_simple_single_construction();
 
   test_get_suffix_array();
   test_create_from_suffix_array_and_lcp_array();
