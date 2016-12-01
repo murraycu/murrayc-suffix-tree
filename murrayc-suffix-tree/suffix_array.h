@@ -69,6 +69,11 @@ public:
   : suffixes_(suffixes), lcp_array_(lcp_array) {
   }
 
+  std::pair<suffix_array_type, lcp_array_type>
+  get_suffix_array_and_lcp_array() const {
+    return std::make_pair(suffixes_, lcp_array_);
+  }
+
   using Matches = std::set<T_Value>;
 
   /** Finds the values for any key containing this substring.
