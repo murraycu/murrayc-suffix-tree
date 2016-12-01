@@ -26,7 +26,8 @@ AM_CXXFLAGS = $(COMMON_CXXFLAGS)
 check_PROGRAMS = \
   tests/test_trie \
   tests/test_radix_tree \
-  tests/test_suffix_tree
+  tests/test_suffix_tree \
+  tests/test_suffix_array
 
 TESTS = $(check_PROGRAMS)
 
@@ -55,6 +56,15 @@ tests_test_suffix_tree_CXXFLAGS = \
 	$(COMMON_CXXFLAGS) \
 	-DMURRAYC_SUFFIX_TREE_TESTS_DIR=\""$(abs_top_srcdir)/tests/"\"
 tests_test_suffix_tree_LDADD = \
+	$(COMMON_LIBS)
+
+tests_test_suffix_array_SOURCES = \
+	murrayc-suffix-tree/suffix_array.h \
+	murrayc-suffix-tree/iter_range.h \
+	tests/test_suffix_array.cc
+tests_test_suffix_array_CXXFLAGS = \
+	$(COMMON_CXXFLAGS)
+tests_test_suffix_array_LDADD = \
 	$(COMMON_LIBS)
 
 EXTRA_DIST = tests/test_pg1400.txt

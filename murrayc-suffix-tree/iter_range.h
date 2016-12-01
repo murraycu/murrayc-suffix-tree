@@ -118,4 +118,51 @@ public:
   std::shared_ptr<const T_Iterator> global_end_;
 };
 
+template <typename T_Iterator>
+inline bool operator<(const IterRange<T_Iterator>& a, const IterRange<T_Iterator>& b) {
+  if (a.empty() && b.empty()) {
+    return false;
+  }
+
+  // TODO: Performance: Avoid the temporary std::string instances:
+  std::string stra(a.start_, a.end());
+  std::string strb(b.start_, b.end());
+  return stra < strb;
+}
+
+template <typename T_Iterator>
+inline bool operator<=(const IterRange<T_Iterator>& a, const IterRange<T_Iterator>& b) {
+  if (a.empty() && b.empty()) {
+    return true;
+  }
+
+  // TODO: Performance: Avoid the temporary std::string instances:
+  std::string stra(a.start_, a.end());
+  std::string strb(b.start_, b.end());
+  return stra <= strb;
+}
+
+template <typename T_Iterator>
+inline bool operator>(const IterRange<T_Iterator>& a, const IterRange<T_Iterator>& b) {
+  if (a.empty() && b.empty()) {
+    return false;
+  }
+
+  // TODO: Performance: Avoid the temporary std::string instances:
+  std::string stra(a.start_, a.end());
+  std::string strb(b.start_, b.end());
+  return stra > strb;
+}
+
+template <typename T_Iterator>
+inline bool operator>=(const IterRange<T_Iterator>& a, const IterRange<T_Iterator>& b) {
+  if (a.empty() && b.empty()) {
+    return true;
+  }
+
+  // TODO: Performance: Avoid the temporary std::string instances:
+  std::string stra(a.start_, a.end());
+  std::string strb(b.start_, b.end());
+  return stra >= strb;
+}
 #endif // MURRAYC_SUFFIX_TREE_ITER_RANGE_H

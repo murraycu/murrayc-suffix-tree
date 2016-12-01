@@ -53,5 +53,6 @@ Makefile.in
 /tests/test_trie
 /tests/test_radix_tree
 /tests/test_suffix_tree
+/tests/test_suffix_array
 
 /murrayc-suffix-tree-0-1.pc
