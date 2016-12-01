@@ -195,11 +195,7 @@ public:
   }
 
   inline static KeyIterator str_end(const Range& key) {
-    if (key.global_end_) {
-      return *(key.global_end_);
-    }
-
-    return key.end_;
+    return key.end();
   }
 
 private:
@@ -627,21 +623,13 @@ private:
 
   static
   bool has_prefix(const Range& str, std::size_t str_start_pos, const Range& prefix, std::size_t prefix_start_pos = 0) {
-    const auto prefix_start = prefix.start_ + prefix_start_pos;
-    const auto prefix_end = str_end(prefix);
-    const auto iters = std::mismatch(str.start_ + str_start_pos, str_end(str),
-        prefix_start, prefix_end);
-    return iters.second == prefix_end;
+    return str.has_prefix(str_start_pos, prefix, prefix_start_pos);
   }
 
   static
   std::size_t common_prefix(const Range& str, std::size_t str_start_pos, const Range& prefix, std::size_t prefix_start_pos) {
-    const auto str_start = str.start_ + str_start_pos;
-    const auto iters = std::mismatch(str_start, str_end(str),
-        prefix.start_ + prefix_start_pos, str_end(prefix));
-    return std::distance(str_start, iters.first);
+    return str.common_prefix(str_start_pos, prefix, prefix_start_pos);
   }
-
 
   void insert_single(const Range& key, const T_Value& value) {
     //std::cout << "insert(): key=" << debug_key(key) << std::endl;
@@ -890,36 +878,22 @@ private:
 
   static
   inline std::size_t str_size(const Range& key) {
-    const auto end = str_end(key);
-    if (end <= key.start_) {
-      return 0;
-    }
-
-    return end - key.start_;
+    return key.size();
   }
 
   static
   inline bool str_empty(const Range& key) {
-    return key.start_ >= str_end(key);
+    return key.empty();
   }
 
   static
   inline Range str_substr(const Range& key, std::size_t start) {
-    const auto start_used = key.start_ + start;
-    const auto key_end = str_end(key);
-    return Range(
-      (start_used < key_end) ? start_used : key_end,
-      key_end);
+    return key.substr(start);
   }
 
   static
   inline Range str_substr(const Range& key, std::size_t start, std::size_t len) {
-    const auto start_used = key.start_ + start;
-    const auto end_used = key.start_ + len;
-    const auto key_end = str_end(key);
-    return Range(
-      (start_used < key_end) ? start_used : key_end,
-      (end_used < key_end) ? end_used : key_end);
+    return key.substr(start, len);
   }
 
   static std::string debug_key(const Range& key) {
