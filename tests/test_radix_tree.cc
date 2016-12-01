@@ -47,21 +47,21 @@ int main() {
   assert(!radix_tree.exists("ban"));
   assert(radix_tree.get_value("ban") == 0);
 
-  const auto candidates = radix_tree.find_candidates("ban");
+  const auto matches = radix_tree.find_matches("ban");
   // TODO: Check wthout caring about the order:
-  const auto expected_candidates = Tree::Candidates{{"bandana", {2}},
+  const auto expected_matches = Tree::Matches{{"bandana", {2}},
       {"banana", {1, 9}}};
   /*
-  for (const auto& candidate : candidates) {
-    std::cout << "candidate: " << candidate.first << ": ";
-    for (const auto& value : candidate.second) {
+  for (const auto& match : matches) {
+    std::cout << "match: " << match.first << ": ";
+    for (const auto& value : match.second) {
       std::cout << value << ", ";
     }
     std::cout << '\n';
   }
   */
 
-  assert(candidates == expected_candidates);
+  assert(matches == expected_matches);
 
   return EXIT_SUCCESS;
 }

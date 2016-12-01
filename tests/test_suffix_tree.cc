@@ -35,7 +35,7 @@ void test_simple_single() {
     auto results = suffix_tree.find("zx");
     std::cout << "results.size(): " << results.size() << std::endl;
     assert(results.size() == 1);
-    assert(results == Tree::Candidates({0}));
+    assert(results == Tree::Matches({0}));
     for (const auto& result : results) {
       std::cout << result << ": " << std::endl;
     }
@@ -55,7 +55,7 @@ void test_simple_multiple() {
   auto results = suffix_tree.find("an");
   std::cout << "results.size(): " << results.size() << std::endl;
   assert(results.size() == 2);
-  assert(results == Tree::Candidates({0, 1}));
+  assert(results == Tree::Matches({0, 1}));
   for (const auto& result : results) {
     std::cout << result << ": " << std::endl;
   }
@@ -63,7 +63,7 @@ void test_simple_multiple() {
   results = suffix_tree.find("bar");
   std::cout << "results.size(): " << results.size() << std::endl;
   assert(results.size() == 2);
-  assert(results == Tree::Candidates({2, 3}));
+  assert(results == Tree::Matches({2, 3}));
 }
 
 static
@@ -198,7 +198,7 @@ void test_simple_single_with_positions() {
     assert(results.size() == 1);
 
     const Tree::Range expected_range(std::cbegin(str) + 2, std::cend(str));
-    const Tree::CandidatesWithPositions expected = {{expected_range, 0}};
+    const Tree::MatchesWithPositions expected = {{expected_range, 0}};
     assert(results == expected);
     for (const auto& result : results) {
       const auto& range = result.first;
@@ -232,7 +232,7 @@ void test_simple_multiple_with_positions() {
     std::cout << "results.size(): " << results.size() << std::endl;
     assert(results.size() == 4);
     // TODO: Don't test the order:
-    const Tree::CandidatesWithPositions expected = {
+    const Tree::MatchesWithPositions expected = {
       {Tree::Range(std::cbegin(str2) + 1, std::cend(str2)), 1},
       {Tree::Range(std::cbegin(str1) + 3, std::cend(str1)), 0},
       {Tree::Range(std::cbegin(str2) + 4, std::cend(str2)), 1},
@@ -252,7 +252,7 @@ void test_simple_multiple_with_positions() {
     const auto results = suffix_tree.find_with_positions("bar");
     std::cout << "results.size(): " << results.size() << std::endl;
     assert(results.size() == 2);
-    const Tree::CandidatesWithPositions expected = {
+    const Tree::MatchesWithPositions expected = {
       {Tree::Range(std::cbegin(str3) + 0, std::cend(str3)), 2},
       {Tree::Range(std::cbegin(str4) + 3, std::cend(str4)), 3}
     };
@@ -293,7 +293,7 @@ void test_simple_single_construction() {
     auto results = suffix_tree.find("zx");
     std::cout << "results.size(): " << results.size() << std::endl;
     assert(results.size() == 1);
-    assert(results == Tree::Candidates({0}));
+    assert(results == Tree::Matches({0}));
     for (const auto& result : results) {
       std::cout << result << ": " << std::endl;
     }
@@ -305,7 +305,7 @@ void test_simple_single_construction() {
     std::cout << "results.size(): " << results.size() << std::endl;
     assert(results.size() == 3);
     //TODO: Don't check the order:
-    const Tree::CandidatesWithPositions expected = {
+    const Tree::MatchesWithPositions expected = {
       {Tree::Range(std::cbegin(str) + 3, std::cend(str)), 0},
       {Tree::Range(std::cbegin(str) + 6, std::cend(str)), 0},
       {Tree::Range(std::cbegin(str) + 0, std::cend(str)), 0}
@@ -390,7 +390,7 @@ test_create_from_suffix_array_and_lcp_array() {
     assert(results.size() == 1);
 
     const Tree::Range expected_range(std::cbegin(str) + 2, std::cend(str));
-    const Tree::CandidatesWithPositions expected = {{expected_range, 0}};
+    const Tree::MatchesWithPositions expected = {{expected_range, 0}};
     assert(results == expected);
     for (const auto& result : results) {
       const auto& range = result.first;

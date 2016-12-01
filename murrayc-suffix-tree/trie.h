@@ -24,7 +24,7 @@ public:
     return node ? node->value : T_Value();
   }
 
-  std::vector<T_Key> find_candidates(const T_Key& prefix) {
+  std::vector<T_Key> find_matches(const T_Key& prefix) {
     if (prefix.empty()) {
       return {};
     }

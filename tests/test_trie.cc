@@ -24,15 +24,15 @@ int main() {
   assert(!trie.exists("ban"));
   assert(trie.get_value("ban") == 0);
 
-  const auto candidates = trie.find_candidates("ban");
-  //for (const auto candidate : candidates) {
-  //  std::cout << "candidate: " << candidate << '\n';
+  const auto matches = trie.find_matches("ban");
+  //for (const auto match : matches) {
+  //  std::cout << "match: " << match << '\n';
   //}
 
   // TODO: Check wthout caring about the order:
-  const auto expected_candidates = std::vector<std::string>({"bandana", "banana"});
+  const auto expected_matches = std::vector<std::string>({"bandana", "banana"});
 
-  assert(candidates == expected_candidates);
+  assert(matches == expected_matches);
 
   return EXIT_SUCCESS;
 }

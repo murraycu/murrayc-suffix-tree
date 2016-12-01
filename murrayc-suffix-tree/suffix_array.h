@@ -69,12 +69,12 @@ public:
   : suffixes_(suffixes), lcp_array_(lcp_array) {
   }
 
-  using Candidates = std::set<T_Value>;
+  using Matches = std::set<T_Value>;
 
   /** Finds the values for any key containing this substring.
    */
-  Candidates find(const T_Key& substr) const {
-    Candidates result;
+  Matches find(const T_Key& substr) const {
+    Matches result;
 
     if (substr.empty()) {
       return result;
@@ -85,10 +85,10 @@ public:
     const auto end = start + substr.size();
     const Range substr_key(start, end);
 
-    const auto candidates_with_positions = find_with_positions(substr_key);
+    const auto matches_with_positions = find_with_positions(substr_key);
 
     // Convert one container into another:
-    for (const auto& kv : candidates_with_positions) {
+    for (const auto& kv : matches_with_positions) {
       result.emplace(kv.second);
     }
 
@@ -96,22 +96,22 @@ public:
   }
 
   /**
-   * Like Candidates, but provides the range of the prefix too,
+   * Like Matches, but provides the range of the prefix too,
    * so the caller can know where in the original insert()ed string,
    * the substring was found. That would refer to the originally-inserted
    * string, but we already require the caller to keep that alive.
    */
-  using CandidatesWithPositions = std::vector<std::pair<Range, T_Value>>;
+  using MatchesWithPositions = std::vector<std::pair<Range, T_Value>>;
 
   /** Finds the values for any key containing this substring.
    */
-  CandidatesWithPositions find_with_positions(const T_Key& substr) const {
+  MatchesWithPositions find_with_positions(const T_Key& substr) const {
     // TODO: This uses binary search (via std::lower_bound() and std::upper_bound()),
     // to find the matching suffixes, but that is O(log(n)). A SuffixTree could
     // do this in O(m), where m is the length of the pattern being searched.
     // We can apparently get that too by using the LCP array:
     // https://en.wikipedia.org/wiki/Suffix_array#Applications
-    CandidatesWithPositions result;
+    MatchesWithPositions result;
 
     if (substr.empty()) {
       return result;
@@ -126,8 +126,8 @@ public:
 
   /** Finds the values for any key containing this substring.
    */
-  CandidatesWithPositions find_with_positions(const Range& substr) const {
-    CandidatesWithPositions result;
+  MatchesWithPositions find_with_positions(const Range& substr) const {
+    MatchesWithPositions result;
 
     if (str_empty(substr)) {
       return result;

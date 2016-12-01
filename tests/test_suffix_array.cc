@@ -71,7 +71,7 @@ void test_simple_single_with_positions() {
     assert(results.size() == 1);
 
     const SA::Range expected_range(std::cbegin(str) + 2, std::cend(str));
-    const SA::CandidatesWithPositions expected = {{expected_range, 0}};
+    const SA::MatchesWithPositions expected = {{expected_range, 0}};
     assert(results == expected);
     for (const auto& result : results) {
       const auto& range = result.first;
@@ -87,7 +87,7 @@ void test_simple_single_with_positions() {
     std::cout << "results.size(): " << results.size() << std::endl;
     assert(results.size() == 3);
     //TODO: Don't check the order:
-    const SA::CandidatesWithPositions expected = {
+    const SA::MatchesWithPositions expected = {
       {SA::Range(std::cbegin(str) + 3, std::cend(str)), 0},
       {SA::Range(std::cbegin(str) + 6, std::cend(str)), 0},
       {SA::Range(std::cbegin(str) + 0, std::cend(str)), 0}

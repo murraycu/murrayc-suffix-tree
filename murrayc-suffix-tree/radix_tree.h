@@ -45,9 +45,9 @@ public:
     return node->values_;
   }
 
-  using Candidates = std::vector<std::pair<T_Key, std::vector<T_Value>>>;
-  Candidates find_candidates(const T_Key& prefix) const {
-    //std::cout << "find_candidates(): prefix=" << prefix << std::endl;
+  using Matches = std::vector<std::pair<T_Key, std::vector<T_Value>>>;
+  Matches find_matches(const T_Key& prefix) const {
+    //std::cout << "find_matches(): prefix=" << prefix << std::endl;
     if (prefix.empty()) {
       return {};
     }
@@ -87,14 +87,14 @@ public:
           // The part is a prefix of the remaining key, so follow it:
           stack_starts.emplace(prefix_pos + edge_part.size(), child_key, edge.dest_);
         } else if (has_prefix(edge_part, 0, prefix, prefix_pos)) { 
-          // The remaining key is a prefix of the part, so use it as part of candidates:
+          // The remaining key is a prefix of the part, so use it as part of matches:
           stack_starts.emplace(prefix_len, child_key, edge.dest_);
         }
       }
     }
 
     //Find all descendent leaves:
-    Candidates result;
+    Matches result;
     while(!stack_result.empty()) {
       const auto item = stack_result.top();
       stack_result.pop();
@@ -118,10 +118,10 @@ public:
   /**
    * Returns T_Value() if the key was not found.
    */
-  std::set<T_Value> find_candidate_values(const T_Key& prefix) const {
+  std::set<T_Value> find_match_values(const T_Key& prefix) const {
     std::set<T_Value> result;
 
-    //std::cout << "find_candidates(): prefix=" << prefix << std::endl;
+    //std::cout << "find_matches(): prefix=" << prefix << std::endl;
     if (prefix.empty()) {
       return result;
     }
