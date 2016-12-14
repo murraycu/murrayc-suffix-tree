@@ -203,10 +203,6 @@ private:
   class Node {
   public:
     Node() = default;
-    Node(const Node& src) = default;
-    Node& operator=(const Node& src) = default;
-    Node(Node&& src) = default;
-    Node& operator=(Node&& src) = default;
 
     ~Node() {
       for(auto& edge : children_) {
@@ -221,11 +217,6 @@ private:
           dest_(dest) {
         assert(str_size(part));
       }
-
-      Edge(const Edge& src) = default;
-      Edge& operator=(const Edge& src) = default;
-      Edge(Edge&& src) = default;
-      Edge& operator=(Edge&& src) = default;
 
       void append_node_to_dest(const Range& part, const Range& key, const T_Value& value) {
         dest_->append_node(part, key, value);
@@ -721,11 +712,6 @@ private:
     EdgeMatch(const typename Node::Edge* edge, std::size_t edge_part_used, std::size_t substr_used, const Node* parent_node)
     : edge_(const_cast<typename Node::Edge*>(edge)), edge_part_used_(edge_part_used), substr_used_(substr_used), parent_node_(const_cast<Node*>(parent_node)) {
     }
-
-    EdgeMatch(const EdgeMatch& src) = default;
-    EdgeMatch& operator=(const EdgeMatch& src) = default;
-    EdgeMatch(EdgeMatch&& src) = default;
-    EdgeMatch& operator=(EdgeMatch&& src) = default;
 
     typename Node::Edge* edge_ = nullptr;
     std::size_t edge_part_used_ = 0;
