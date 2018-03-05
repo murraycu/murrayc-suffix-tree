@@ -9,6 +9,7 @@
 #include <vector>
 #include <set>
 #include <stack>
+#include <cassert>
 
 /**
  * @tparam T_Key For instance, std::string, or something other container.
