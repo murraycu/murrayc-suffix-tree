@@ -17,7 +17,8 @@ void test_simple_single() {
   using Tree = SuffixTree<std::string, std::size_t>;
   Tree suffix_tree;
 
-  suffix_tree.insert("xyzxyaxyz", 0);
+  const std::string str1 = "xyzxyaxyz"; // Needs to stay alive as long as the suffix tree.
+  suffix_tree.insert(str1, 0);
 
   {
     auto results = suffix_tree.find("bob");
@@ -47,10 +48,16 @@ void test_simple_multiple() {
   using Tree = SuffixTree<std::string, std::size_t>;
   Tree suffix_tree;
 
-  suffix_tree.insert("banana", 0);
-  suffix_tree.insert("bandana", 1);
-  suffix_tree.insert("bar", 2);
-  suffix_tree.insert("foobar", 3);
+  // These need to stay alive as long as the suffix tree.
+  // TODO: Allow use of temporary instances.
+  const std::string str1 = "banana";
+  suffix_tree.insert(str1, 0);
+  const std::string str2 = "bandana";
+  suffix_tree.insert(str2, 1);
+  const std::string str3 = "bar";
+  suffix_tree.insert(str3, 2);
+  const std::string str4 = "foobar";
+  suffix_tree.insert(str4, 3);
 
   auto results = suffix_tree.find("an");
   std::cout << "results.size(): " << results.size() << std::endl;
